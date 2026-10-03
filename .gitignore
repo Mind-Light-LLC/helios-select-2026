@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vercel/
+.env*
+*.pem
+*.key
+.DS_Store
+supabase/.temp/
+.vercel
