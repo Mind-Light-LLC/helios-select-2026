@@ -13,7 +13,7 @@ This is an original project built for the Supabase Select 2026 Hackathon. It is 
 3. Ask **"I have ten dollars"** or **"What does this organization do?"** HeliOS narrows the catalog and explains what is known. A donation happens on the organization's own site.
 4. Open **Explore needs** to inspect a sourced public signal, or **Connect an agent** to see the same published records through MCP. Save a path in **My actions** if you want to return to it.
 
-The catalog currently combines 15 sourced global paths with 15 manually reviewed San Francisco paths. Nine global records are published in the isolated HeliOS Supabase project. Six newer global records remain labeled `curated_demo` pending publication review. Six San Francisco organizations have reviewed official donation paths. Empty search results mean this limited catalog has no match, not that the world has no opportunity.
+The catalog currently combines 23 sourced global paths with 18 manually reviewed San Francisco paths across 15 organizations. Nine global records are published in the isolated HeliOS Supabase project; newer global paths remain labeled `curated_demo` pending publication review. Six San Francisco organizations have reviewed official donation paths. Empty search results mean this limited catalog has no match, not that the world has no opportunity.
 
 ## The point of the product
 
@@ -25,7 +25,7 @@ Read the [product brief](docs/product-brief.md) for the demo scope, [voice-to-ve
 
 ## Run locally
 
-Use Node.js 22 or newer. Run `npm ci`, then `npm run dev`. Vite serves the 30-record demo catalog and text search. OpenAI Realtime is the sole voice path: hold Option to speak or tap the mic for a conversation. The search bar glows cyan while listening and amber while HeliOS speaks. When paid voice is unavailable, type in the search bar. `npm run build` typechecks and compiles the client. The globe uses NASA GIBS Blue Marble imagery from August 2004 with on-map attribution.
+Use Node.js 22 or newer. Run `npm ci`, then `npm run dev`. Vite serves the 41-record demo catalog and text search. OpenAI Realtime is the sole voice path: hold Option to speak or tap the mic for a conversation. The search bar glows cyan while listening and amber while HeliOS speaks. When paid voice is unavailable, type in the search bar. `npm run build` typechecks and compiles the client. The globe uses NASA GIBS Blue Marble imagery from August 2004 with on-map attribution.
 
 Use `vercel dev` for the full API, Supabase Auth, MCP, and OpenAI Realtime path. The API runtime needs `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for its isolated HeliOS project. `GEMINI_API_KEY` and `OPENAI_API_KEY` belong only in server-side settings. Never commit credentials. Account creation uses Supabase email/password Auth; a hosted project may require email confirmation and a configured redirect URL. Guests can still explore.
 
@@ -38,5 +38,7 @@ Connect an MCP client to `https://<deployment>/api/mcp`. The read-only tools are
 `npm run demo:mcp -- http://127.0.0.1:3000` exercises a two-client handoff against the full local API. One client rejects an October 18 query, finds the sourced October 17 Lakewood event, and passes its ID to the second client, which compares it with the globe catalog. The test demonstrates record transfer, not a booked volunteer place.
 
 Search constrains place, day, date, availability, and eligibility before ranking. "Near me" requires a city or country; HeliOS does not guess a person's location. Need cards distinguish reviewed public signals from partner-confirmed requests. The current Food Bank Singapore signal has no partner-confirmed quantity or delivery proof. Private account saves and need drafts do not become public participation claims.
+
+Search keeps the full set of catalog pins on the globe. A query with no exact match points toward a requested city or country when it can be resolved and offers sourced alternatives with the missing timing or availability stated. Place lookup for names outside the catalog uses Open-Meteo / GeoNames with on-map attribution. [Open-Meteo's free API terms](https://open-meteo.com/en/terms) limit use to noncommercial activity; review licensing and capacity before public or commercial use.
 
 The [Small Steps pilot note](docs/SMALL_STEPS_PILOT.md) describes a prospective contact, not an approved need. The [donation flow](docs/STRIPE_DONATION_FLOW.md) specifies future payment verification; no HeliOS checkout or received gift is claimed. The [interface framework](docs/HELIOS_INTERFACE_FRAMEWORK.md) records the UI decisions.

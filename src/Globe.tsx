@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { HeliosItem } from './types';
+import type { MapFocus } from './mapFocus';
 import { organizationLogoPath, organizationMonogram } from './organizationBrand';
 import { shadeTile, shadeTileTemplate } from './solarShade';
 
@@ -56,16 +57,20 @@ const earthStyle: maplibregl.StyleSpecification = {
 type Props = {
   items: HeliosItem[];
   selectedId: string | null;
+  focus: MapFocus | null;
   onSelect: (id: string) => void;
   onExplore: (place?: string) => void;
 };
 
-export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
+export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const callbacksRef = useRef({ onSelect, onExplore });
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { callbacksRef.current = { onSelect, onExplore }; }, [onSelect, onExplore]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -124,19 +129,26 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
     if (!map) return;
     const grouped = new Map<string, HeliosItem[]>();
     for (const item of items) grouped.set(item.place_label, [...(grouped.get(item.place_label) ?? []), item]);
-    const markerGroups = selectedId ? items.filter((item) => item.id === selectedId).map((item) => [item]) : [...grouped.values()];
+    const markerGroups = [...grouped.values()].flatMap((group) => {
+      const selected = group.find((item) => item.id === selectedId);
+      if (!selected) return [group];
+      const others = group.filter((item) => item.id !== selectedId);
+      return others.length ? [others, [selected]] : [[selected]];
+    });
     markersRef.current = markerGroups.map((group) => {
       const clustered = group.length > 1;
+      const isSelected = group.some((entry) => entry.id === selectedId);
       const item = clustered ? { ...group[0],
         longitude: group.reduce((sum, entry) => sum + entry.longitude, 0) / group.length,
         latitude: group.reduce((sum, entry) => sum + entry.latitude, 0) / group.length,
       } : group[0];
       const markerElement = document.createElement('button');
       markerElement.type = 'button';
-      markerElement.className = `globe-marker ${item.record_kind === 'event' ? 'is-event' : ''} ${item.id === selectedId ? 'is-selected' : ''}`;
+      markerElement.className = `globe-marker ${item.record_kind === 'event' ? 'is-event' : ''} ${isSelected ? 'is-selected' : ''}`;
       markerElement.setAttribute('aria-label', clustered ? `Show ${group.length} ${item.place_label} opportunities` : `Show ${item.title}`);
       markerElement.title = clustered ? `${group.length} sourced paths around ${item.place_label}` : item.title;
-      markerElement.addEventListener('click', () => clustered ? onExplore(item.place_label) : onSelect(item.id));
+      markerElement.addEventListener('click', () => clustered
+        ? callbacksRef.current.onExplore(item.place_label) : callbacksRef.current.onSelect(item.id));
       const badge = document.createElement('span');
       badge.className = 'marker-badge';
       badge.setAttribute('aria-hidden', 'true');
@@ -163,44 +175,35 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
     };
-  }, [items, selectedId, onSelect, onExplore]);
+  }, [items, selectedId]);
 
   useEffect(() => {
     const item = items.find((entry) => entry.id === selectedId);
     const map = mapRef.current;
-    if (!map) return;
+    const target = item ?? focus;
+    if (!map || !target) return;
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1400;
-    if (!item) {
-      const local = items.length > 0 && items.every((entry) => entry.place_label.startsWith('San Francisco'));
-      if (local) {
-        const longitude = items.reduce((sum, entry) => sum + entry.longitude, 0) / items.length;
-        const latitude = items.reduce((sum, entry) => sum + entry.latitude, 0) / items.length;
-        map.flyTo({ center: [longitude, latitude], zoom: 1.9, duration, essential: true });
-      } else {
-        map.flyTo({ center: [5, 5], zoom: globalZoom(map.getContainer().clientWidth), duration, essential: true });
-      }
-      return;
-    }
-    const frameSelected = (animationDuration: number) => {
+    const frameTarget = (animationDuration: number) => {
       const { clientWidth: width, clientHeight: height } = map.getContainer();
       map.flyTo({
-        center: [item.longitude, item.latitude],
-        zoom: 2.6,
-        offset: selectedCameraOffset(width, height),
+        center: [target.longitude, target.latitude],
+        zoom: item || focus?.scale === 'city' ? 2.6 : focus?.scale === 'country' ? 1.9 : globalZoom(width),
+        offset: !item && focus?.scale === 'world' ? [0, 0] : selectedCameraOffset(width, height),
         duration: animationDuration,
         essential: true,
       });
     };
-    const onResize = () => frameSelected(0);
+    const onResize = () => frameTarget(0);
     map.on('resize', onResize);
-    frameSelected(duration);
+    frameTarget(duration);
     return () => { map.off('resize', onResize); };
-  }, [items, selectedId]);
+  }, [items, selectedId, focus]);
 
   return <div ref={frameRef} className="globe-frame">
     <div ref={containerRef} className="globe-canvas" aria-label="Global map of sourced results" />
     <div className="globe-halo" aria-hidden="true" />
     {error && <div className="globe-error" role="status">{error}</div>}
+    {focus?.source === 'open_meteo' && <a className="place-credit" href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noopener noreferrer">Place lookup: Open-Meteo / GeoNames</a>}
     <a className="imagery-credit" href="https://www.earthdata.nasa.gov/data/tools/global-imagery-browse-services" target="_blank" rel="noopener noreferrer">Earth imagery: NASA GIBS · Blue Marble 2004</a>
   </div>;
 }

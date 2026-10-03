@@ -1,16 +1,19 @@
 # San Francisco source review
 
-Checked October 3, 2026. The fifteen records in `src/sfCatalog.ts` are manually reviewed demo leads. Their official pages establish the organization, work, and next step. The source review is due again October 10, 2026. None is a provider-confirmed signup, donation, or completed outcome.
+Checked October 3, 2026. The eighteen records in `src/sfCatalog.ts` are manually reviewed demo leads. Their official pages establish the organization, work, and next step. The source review is due again October 10, 2026. None is a provider-confirmed opening, signup, donation, or completed outcome.
 
 | Organization | Cause and official source | Schedule claim in demo |
 | --- | --- | --- |
 | San Francisco-Marin Food Bank | [Food sorting and grocery distribution](https://www.sfmfoodbank.org/volunteer/) | Saturday warehouse path; check dated calendar |
-| St. Anthony Foundation | [Dining Room meals](https://www.stanthonysf.org/volunteer/group-inquiry/) | Daily 9:30 am to 1:30 pm program |
+| San Francisco-Marin Food Bank | [Home-delivered groceries](https://www.sfmfoodbank.org/volunteer/) | SF delivery routes Monday through Saturday, including Friday; driver requirements and dated capacity need provider confirmation |
+| St. Anthony Foundation | [Dining Room meals](https://www.stanthonysf.org/volunteer/group-inquiry/) | Daily program; published group and FAQ hours differ, so confirm the individual shift time and availability on the [signup calendar](https://www.stanthonysf.org/volunteer/sign-up-now/) |
+| St. Anthony Foundation | [Free Clothing Program](https://www.stanthonysf.org/volunteer/group-inquiry/) | Published Friday group shifts 9 am to noon and 1 pm to 4 pm; individual availability unverified |
 | Project Open Hand | [Meals for people with health needs](https://www.openhand.org/volunteer/individual-volunteer/volunteer-our-kitchen) | Kitchen meal prep 9 am to noon, Monday to Sunday |
+| Project Open Hand | [Grocery Center shopping](https://www.openhand.org/volunteer/grocery-center-shopping) | Published Friday shifts 10:45 am to 1 pm and 12:30 pm to 4:15 pm; placement unconfirmed |
 | GLIDE | [Tenderloin meal and community service](https://www.glide.org/volunteer/) | Calendar required for a specific shift |
 | Meals on Wheels San Francisco | [Support for homebound older adults](https://volunteer.mowsf.org/frequently-asked-questions-faq) | Official FAQ says no weekend volunteer programs |
 | Friends of the Urban Forest | [Tree and garden planting](https://www.friendsoftheurbanforest.org/volunteer) | Planting events generally Saturday 9 am to 1 pm |
-| Habitat for Humanity Greater San Francisco | [Affordable housing volunteering FAQ](https://volunteer.habitatgsf.org/faqs/about-volunteering-for-habitat/) | Shifts usually Wednesday to Saturday; project location varies |
+| Habitat for Humanity Greater San Francisco | [Affordable housing volunteering FAQ](https://volunteer.habitatgsf.org/faqs/about-volunteering-for-habitat/) | Shifts usually Wednesday to Saturday; project location varies, so this record does not satisfy a San Francisco weekday search |
 | San Francisco SPCA | [Animal welfare](https://www.sfspca.org/join-our-community/volunteer/) | Role schedule unverified |
 | 826 Valencia | [Youth writing and tutoring](https://www.826valencia.org/volunteer/) | Tutor schedule unverified |
 | Larkin Street Youth Services | [Support for young people facing homelessness](https://larkinstreetyouth.org/volunteer/) | Schedule arranged after inquiry |

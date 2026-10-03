@@ -3,7 +3,7 @@ import type { HeliosItem } from './types.js';
 type SfRecord = Pick<HeliosItem, 'id' | 'title' | 'summary' | 'organization_name' | 'source_url'
   | 'action_url' | 'action_kind' | 'action_label' | 'action_note' | 'schedule_text'>
   & { latitude: number; longitude: number; cause_tags: string[]; weekly_days?: string[];
-    donation_url?: string; donation_minimum_usd?: number };
+    donation_url?: string; donation_minimum_usd?: number; source_checked_at?: string; review_due_at?: string };
 
 const checked = '2026-10-03T20:08:00Z';
 const reviewDue = '2026-10-10T20:08:00Z';
@@ -13,7 +13,7 @@ function item(record: SfRecord): HeliosItem {
   return {
     ...record, record_kind: 'volunteer', country: 'United States', place_label: 'San Francisco, California',
     pin_meaning: 'organization_city', availability_status: 'not_confirmed', starts_at: null,
-    source_checked_at: checked, review_due_at: reviewDue,
+    source_checked_at: record.source_checked_at ?? checked, review_due_at: record.review_due_at ?? reviewDue,
     publication_state: 'curated_demo', action_authority: 'provider',
     weekly_days: record.weekly_days ?? [],
   };
@@ -33,15 +33,41 @@ export const sfCatalog: HeliosItem[] = [
     donation_url: 'https://donate.sfmfoodbank.org/page/69396/donate/1?locale=en-US',
   }),
   item({
+    id: 'sfm-food-bank-home-delivery', title: 'Deliver groceries to neighbors',
+    organization_name: 'San Francisco-Marin Food Bank',
+    summary: 'Use your own car to deliver groceries from the Food Bank’s San Francisco warehouse to households along a local route.',
+    latitude: 37.747, longitude: -122.386, cause_tags: ['food', 'hunger', 'seniors', 'delivery'],
+    weekly_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    schedule_text: 'San Francisco delivery routes are listed Monday through Saturday, including Friday; a route takes about three hours.',
+    source_url: 'https://www.sfmfoodbank.org/volunteer/', action_url: 'https://volunteering.sfmfoodbank.org/need/',
+    action_kind: 'role_directory', action_label: 'Check delivery routes',
+    action_note: 'Drivers must be 18+, provide a car and smartphone, and pass the provider’s driving and background checks. Confirm a dated opening.',
+    source_checked_at: '2026-10-03T22:00:00Z', review_due_at: '2026-10-10T22:00:00Z',
+  }),
+  item({
     id: 'st-anthony-dining-room-sf', title: 'Serve meals in the Dining Room',
     organization_name: 'St. Anthony Foundation',
     summary: 'Support the Tenderloin Dining Room by preparing, packing, and serving meals to guests.',
     latitude: 37.782, longitude: -122.413, cause_tags: ['food', 'hunger', 'homelessness'], weekly_days: daily,
-    schedule_text: 'Published program: every day, 9:30 am to 1:30 pm. Open slots require calendar confirmation.',
+    schedule_text: 'Dining Room volunteering is described for every day; confirm shift time and opening in the individual calendar.',
     source_url: 'https://www.stanthonysf.org/volunteer/group-inquiry/', action_url: 'https://www.stanthonysf.org/volunteer/sign-up-now/',
     action_kind: 'registration_page', action_label: 'Check Dining Room calendar',
     action_note: 'The organization controls registration. Full or unreleased shifts may appear unavailable.',
     donation_url: 'https://www.stanthonysf.org/give/',
+    source_checked_at: '2026-10-03T22:00:00Z', review_due_at: '2026-10-10T22:00:00Z',
+  }),
+  item({
+    id: 'st-anthony-clothing-sf', title: 'Sort clothing and assist shoppers',
+    organization_name: 'St. Anthony Foundation',
+    summary: 'Support the Free Clothing Program by sorting donations and helping guests find clothing in the Tenderloin.',
+    latitude: 37.782, longitude: -122.413, cause_tags: ['clothing', 'homelessness', 'community'],
+    weekly_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    schedule_text: 'Published group shifts include Friday 9 am to noon and 1 pm to 4 pm; check the individual calendar for a place.',
+    source_url: 'https://www.stanthonysf.org/volunteer/group-inquiry/',
+    action_url: 'https://www.stanthonysf.org/volunteer/sign-up-now/',
+    action_kind: 'registration_page', action_label: 'Check clothing shifts',
+    action_note: 'The published times describe group shifts. Individual availability and assignment require provider confirmation.',
+    source_checked_at: '2026-10-03T22:00:00Z', review_due_at: '2026-10-10T22:00:00Z',
   }),
   item({
     id: 'project-open-hand-kitchen-sf', title: 'Prepare meals for neighbors',
@@ -54,6 +80,19 @@ export const sfCatalog: HeliosItem[] = [
     action_kind: 'registration_page', action_label: 'Check Hot Spot shifts',
     action_note: 'Review the age and food safety guidelines, then check dated openings. Opening the page is not registration.',
     donation_url: 'https://www.openhand.org/donate', donation_minimum_usd: 10,
+  }),
+  item({
+    id: 'project-open-hand-grocery-sf', title: 'Help neighbors shop for groceries',
+    organization_name: 'Project Open Hand',
+    summary: 'Assemble grocery bags and help clients choose groceries at Project Open Hand’s San Francisco Grocery Center.',
+    latitude: 37.784, longitude: -122.420, cause_tags: ['food', 'health', 'seniors'],
+    weekly_days: ['Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    schedule_text: 'Published Friday shifts: 10:45 am to 1 pm and 12:30 pm to 4:15 pm; confirm a weekly placement or Hot Spot.',
+    source_url: 'https://www.openhand.org/volunteer/grocery-center-shopping',
+    action_url: 'https://www.openhand.org/volunteer/grocery-center-shopping',
+    action_kind: 'official_page', action_label: 'Check Grocery Center signup',
+    action_note: 'A published weekly schedule does not confirm a Friday opening. Project Open Hand controls placement and Hot Spot signup.',
+    source_checked_at: '2026-10-03T22:00:00Z', review_due_at: '2026-10-10T22:00:00Z',
   }),
   item({
     id: 'glide-meals-sf', title: 'Help with free daily meals', organization_name: 'GLIDE',
@@ -87,7 +126,6 @@ export const sfCatalog: HeliosItem[] = [
     id: 'habitat-greater-sf', title: 'Help build or repair homes', organization_name: 'Habitat for Humanity Greater San Francisco',
     summary: 'Join home building or preservation projects that support affordable housing in the Greater San Francisco region.',
     latitude: 37.790, longitude: -122.403, cause_tags: ['housing', 'homes', 'seniors'],
-    weekly_days: ['Wednesday', 'Thursday', 'Friday', 'Saturday'],
     schedule_text: 'Construction and repair shifts are usually Wednesday through Saturday; location varies.',
     source_url: 'https://volunteer.habitatgsf.org/faqs/about-volunteering-for-habitat/',
     action_url: 'https://volunteer.habitatgsf.org/need/',
