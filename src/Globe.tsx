@@ -6,9 +6,12 @@ import type { MapFocus } from './mapFocus';
 import { globeMarkerGroups } from './globeMarkerGroups';
 import { organizationBadgeTone, organizationLogoNeedsDarkBackground, organizationLogoPath, organizationMonogram } from './organizationBrand';
 import { shadeTile, shadeTileTemplate } from './solarShade';
+import { cityLayers, citySource } from './cityMapLayers';
 
 maplibregl.setWorkerUrl(workerUrl);
 maplibregl.addProtocol('helios-shade', async (params) => ({ data: await shadeTile(params.url) }));
+
+const cityZoom = 9.4;
 
 function globalZoom(width: number): number {
   return width < 650 ? 1.32 : width < 1100 ? 1.92 : 2.12;
@@ -20,9 +23,16 @@ function selectedCameraOffset(width: number, height: number): [number, number] {
   return [Math.min(0, cardLeft - 140 - width / 2), -35];
 }
 
+function searchCameraOffset(width: number, height: number): [number, number] {
+  if (width <= 760) return [0, -Math.min(height * 0.32, 205)];
+  const cardRight = Math.min(448, width - 40) + Math.min(56, Math.max(20, width * 0.038));
+  return [Math.max(0, cardRight + 140 - width / 2), -35];
+}
+
 const earthStyle: maplibregl.StyleSpecification = {
   version: 8,
   projection: { type: 'globe' },
+  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
   sources: {
     earth: {
       type: 'raster',
@@ -34,6 +44,7 @@ const earthStyle: maplibregl.StyleSpecification = {
     shade: {
       type: 'raster', tiles: [shadeTileTemplate(new Date())], tileSize: 256, maxzoom: 5,
     },
+    city: citySource,
   },
   layers: [{
     id: 'earth', type: 'raster', source: 'earth',
@@ -45,7 +56,8 @@ const earthStyle: maplibregl.StyleSpecification = {
       'raster-fade-duration': 350,
     },
   },
-    { id: 'shade', type: 'raster', source: 'shade', paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } }],
+    { id: 'shade', type: 'raster', source: 'shade', paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } },
+    ...cityLayers],
   sky: {
     'sky-color': '#020a16',
     'horizon-color': '#1d6287',
@@ -72,6 +84,7 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
   const callbacksRef = useRef({ onSelect, onExplore });
   const [error, setError] = useState<string | null>(null);
   const [worldMarkers, setWorldMarkers] = useState(true);
+  const [cityMapVisible, setCityMapVisible] = useState(false);
 
   useEffect(() => { callbacksRef.current = { onSelect, onExplore }; }, [onSelect, onExplore]);
 
@@ -84,7 +97,7 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
         center: [5, 5],
         zoom: globalZoom(containerRef.current.clientWidth),
         minZoom: 0.8,
-        maxZoom: 8,
+        maxZoom: 10.5,
         attributionControl: false,
       });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -106,7 +119,15 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
       map.on('move', updateHalo);
       map.on('resize', updateHalo);
       const updateMarkerZoom = () => setWorldMarkers(map.getZoom() < 2.5);
+      let showingCityMap = false;
+      const updateCityCredit = () => {
+        const visible = map.getZoom() >= 7;
+        if (visible === showingCityMap) return;
+        showingCityMap = visible;
+        setCityMapVisible(visible);
+      };
       map.on('zoomend', updateMarkerZoom);
+      map.on('zoom', updateCityCredit);
       updateHalo();
       const solarRefresh = window.setInterval(() => {
         const source = map.getSource('shade') as maplibregl.RasterTileSource | undefined;
@@ -117,6 +138,7 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
         map.off('move', updateHalo);
         map.off('resize', updateHalo);
         map.off('zoomend', updateMarkerZoom);
+        map.off('zoom', updateCityCredit);
         window.clearInterval(solarRefresh);
         markersRef.current.forEach((marker) => marker.remove());
         markersRef.current = [];
@@ -206,8 +228,9 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
       const { clientWidth: width, clientHeight: height } = map.getContainer();
       map.flyTo({
         center: [target.longitude, target.latitude],
-        zoom: item || focus?.scale === 'city' ? 2.6 : focus?.scale === 'country' ? 1.9 : globalZoom(width),
-        offset: !item && focus?.scale === 'world' ? [0, 0] : selectedCameraOffset(width, height),
+        zoom: item || focus?.scale === 'city' ? cityZoom : focus?.scale === 'country' ? 1.9 : globalZoom(width),
+        offset: !item && focus?.scale === 'world' ? [0, 0]
+          : item ? selectedCameraOffset(width, height) : searchCameraOffset(width, height),
         duration: animationDuration,
         essential: true,
       });
@@ -259,6 +282,9 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
     <div className="globe-halo" aria-hidden="true" />
     {error && <div className="globe-error" role="status">{error}</div>}
     {focus?.source === 'open_meteo' && <a className="place-credit" href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noopener noreferrer">Place lookup: Open-Meteo / GeoNames</a>}
-    <a className="imagery-credit" href="https://www.earthdata.nasa.gov/data/tools/global-imagery-browse-services" target="_blank" rel="noopener noreferrer">Earth imagery: NASA GIBS · Blue Marble 2004</a>
+    <div className="imagery-credit">
+      <a href="https://www.earthdata.nasa.gov/data/tools/global-imagery-browse-services" target="_blank" rel="noopener noreferrer">Earth imagery: NASA GIBS · Blue Marble 2004</a>
+      {cityMapVisible && <span> · <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></span>}
+    </div>
   </div>;
 }

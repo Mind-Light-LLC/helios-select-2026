@@ -17,7 +17,7 @@ This is an original project built for the Supabase Select 2026 Hackathon. It is 
 | Agent handoff | A read-only MCP and JSON interface exposes the same records, source links, publication state, and action authority. |
 | External outcomes | Official partner links are handoffs. HeliOS does not submit, book, donate, or claim an outcome without a provider receipt. |
 
-The globe uses [NASA GIBS Blue Marble imagery](docs/visual-sources.md). Organization marks are sourced from official sites where a legible mark was available; the remaining records use initials. Marks identify organizations and do not imply partnership.
+The globe uses [NASA GIBS Blue Marble imagery](docs/visual-sources.md) at world scale and [OpenFreeMap](https://openfreemap.org/) street and place data at city scale, with on-map attribution. A city fly-to centers the organization's listed city, not a verified shift address. OpenFreeMap's public tile service has no SLA. Organization marks are sourced from official sites where a legible mark was available; the remaining records use initials. Marks identify organizations and do not imply partnership.
 
 ## Try it in two minutes
 
