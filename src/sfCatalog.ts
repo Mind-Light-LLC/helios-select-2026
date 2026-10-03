@@ -1,0 +1,176 @@
+import type { HeliosItem } from './types';
+
+type SfRecord = Pick<HeliosItem, 'id' | 'title' | 'summary' | 'organization_name' | 'source_url'
+  | 'action_url' | 'action_kind' | 'action_label' | 'action_note' | 'schedule_text'>
+  & { latitude: number; longitude: number; cause_tags: string[]; weekly_days?: string[];
+    donation_url?: string; donation_minimum_usd?: number };
+
+const checked = '2026-10-03T20:08:00Z';
+const reviewDue = '2026-10-10T20:08:00Z';
+const daily = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+function item(record: SfRecord): HeliosItem {
+  return {
+    ...record, record_kind: 'volunteer', country: 'United States', place_label: 'San Francisco, California',
+    pin_meaning: 'organization_city', availability_status: 'not_confirmed', starts_at: null,
+    source_checked_at: checked, review_due_at: reviewDue,
+    publication_state: 'curated_demo', action_authority: 'provider',
+    weekly_days: record.weekly_days ?? [],
+  };
+}
+
+// Each source is the organization's own page. Days describe published recurring programs, not open slots.
+export const sfCatalog: HeliosItem[] = [
+  item({
+    id: 'sfm-food-bank-warehouse', title: 'Pack groceries at the Food Bank',
+    organization_name: 'San Francisco-Marin Food Bank',
+    summary: 'Help sort produce and pack groceries for neighbors using the Food Bank’s San Francisco warehouses and pantries.',
+    latitude: 37.760, longitude: -122.395, cause_tags: ['food', 'hunger', 'seniors'], weekly_days: ['Saturday'],
+    schedule_text: 'Saturday warehouse shifts are listed; confirm a dated opening in the volunteer calendar.',
+    source_url: 'https://www.sfmfoodbank.org/volunteer/', action_url: 'https://volunteering.sfmfoodbank.org/need/',
+    action_kind: 'role_directory', action_label: 'Check Food Bank shifts',
+    action_note: 'Each person needs a reservation. This catalog has not confirmed an open Saturday shift.',
+    donation_url: 'https://donate.sfmfoodbank.org/page/69396/donate/1?locale=en-US',
+  }),
+  item({
+    id: 'st-anthony-dining-room-sf', title: 'Serve meals in the Dining Room',
+    organization_name: 'St. Anthony Foundation',
+    summary: 'Support the Tenderloin Dining Room by preparing, packing, and serving meals to guests.',
+    latitude: 37.782, longitude: -122.413, cause_tags: ['food', 'hunger', 'homelessness'], weekly_days: daily,
+    schedule_text: 'Published program: every day, 9:30 am to 1:30 pm. Open slots require calendar confirmation.',
+    source_url: 'https://www.stanthonysf.org/volunteer/group-inquiry/', action_url: 'https://www.stanthonysf.org/volunteer/sign-up-now/',
+    action_kind: 'registration_page', action_label: 'Check Dining Room calendar',
+    action_note: 'The organization controls registration. Full or unreleased shifts may appear unavailable.',
+    donation_url: 'https://www.stanthonysf.org/give/',
+  }),
+  item({
+    id: 'project-open-hand-kitchen-sf', title: 'Prepare meals for neighbors',
+    organization_name: 'Project Open Hand',
+    summary: 'Help prepare or package nutritious meals for people with health needs and older adults in San Francisco.',
+    latitude: 37.784, longitude: -122.420, cause_tags: ['food', 'health', 'seniors'], weekly_days: daily,
+    schedule_text: 'Published kitchen shift: 9 am to noon, Monday through Sunday; check current openings.',
+    source_url: 'https://www.openhand.org/volunteer/individual-volunteer/volunteer-our-kitchen',
+    action_url: 'https://www.openhand.org/volunteer/individual-volunteer/volunteer-our-kitchen',
+    action_kind: 'official_page', action_label: 'Explore kitchen shifts',
+    action_note: 'The organization offers weekly inquiry and Hot Spot paths. No particular shift is confirmed here.',
+    donation_url: 'https://www.openhand.org/donate', donation_minimum_usd: 10,
+  }),
+  item({
+    id: 'glide-meals-sf', title: 'Help with free daily meals', organization_name: 'GLIDE',
+    summary: 'Support GLIDE’s Tenderloin meal service through food preparation, serving, and other community roles.',
+    latitude: 37.785, longitude: -122.412, cause_tags: ['food', 'hunger', 'homelessness'],
+    schedule_text: 'Volunteer shifts appear on GLIDE’s calendar; check specific dates and capacity.',
+    source_url: 'https://www.glide.org/volunteer/', action_url: 'https://www.glide.org/volunteer/',
+    action_kind: 'role_directory', action_label: 'Check GLIDE shifts',
+    action_note: 'Daily meal service does not establish an open volunteer shift on every day.',
+    donation_url: 'https://www.glide.org/give/',
+  }),
+  item({
+    id: 'meals-on-wheels-sf', title: 'Support homebound older adults', organization_name: 'Meals on Wheels San Francisco',
+    summary: 'Help deliver groceries or provide social support to homebound seniors and adults with disabilities.',
+    latitude: 37.744, longitude: -122.403, cause_tags: ['food', 'seniors', 'health'],
+    schedule_text: 'The organization says it does not currently offer weekend volunteer programs.',
+    source_url: 'https://volunteer.mowsf.org/frequently-asked-questions-faq', action_url: 'https://www.mowsf.org/signup/',
+    action_kind: 'interest_form', action_label: 'Start volunteer application',
+    action_note: 'Application, orientation, and background check are required before volunteering.',
+  }),
+  item({
+    id: 'friends-urban-forest-sf', title: 'Plant street trees', organization_name: 'Friends of the Urban Forest',
+    summary: 'Join neighbors planting street trees and sidewalk gardens to strengthen San Francisco’s urban forest.',
+    latitude: 37.798, longitude: -122.459, cause_tags: ['environment', 'climate', 'trees'], weekly_days: ['Saturday'],
+    schedule_text: 'Planting events generally run Saturdays, 9 am to 1 pm; check the event list.',
+    source_url: 'https://www.friendsoftheurbanforest.org/volunteer', action_url: 'https://www.friendsoftheurbanforest.org/volunteer',
+    action_kind: 'role_directory', action_label: 'See planting events',
+    action_note: 'A general Saturday pattern is not a confirmed event or registration.',
+  }),
+  item({
+    id: 'habitat-greater-sf', title: 'Help build or repair homes', organization_name: 'Habitat for Humanity Greater San Francisco',
+    summary: 'Join home building or preservation projects that support affordable housing in the Greater San Francisco region.',
+    latitude: 37.790, longitude: -122.403, cause_tags: ['housing', 'homes', 'seniors'],
+    weekly_days: ['Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    schedule_text: 'Construction and repair shifts are usually Wednesday through Saturday; location varies.',
+    source_url: 'https://volunteer.habitatgsf.org/faqs/about-volunteering-for-habitat/',
+    action_url: 'https://volunteer.habitatgsf.org/need/',
+    action_kind: 'role_directory', action_label: 'Check Habitat calendar',
+    action_note: 'Specific project dates, locations, and requirements are set by Habitat’s volunteer portal.',
+  }),
+  item({
+    id: 'sf-spca-volunteer', title: 'Help animals and their caregivers', organization_name: 'San Francisco SPCA',
+    summary: 'Explore volunteer roles supporting dogs, cats, and community animal care in San Francisco.',
+    latitude: 37.765, longitude: -122.413, cause_tags: ['animals', 'pets', 'welfare'],
+    schedule_text: 'Role schedules vary; ask the SF SPCA or check its volunteer page.',
+    source_url: 'https://www.sfspca.org/join-our-community/volunteer/',
+    action_url: 'https://www.sfspca.org/join-our-community/volunteer/',
+    action_kind: 'role_directory', action_label: 'Explore animal roles',
+    action_note: 'A volunteer role and place have not been reserved.',
+    donation_url: 'https://www.sfspca.org/join-our-community/ways-to-give/',
+  }),
+  item({
+    id: '826-valencia-tutoring', title: 'Tutor young writers', organization_name: '826 Valencia',
+    summary: 'Help San Francisco students build writing skills and confidence through free tutoring and writing programs.',
+    latitude: 37.759, longitude: -122.421, cause_tags: ['education', 'literacy', 'youth', 'children'],
+    schedule_text: 'Program and tutor schedules vary; see the volunteer application.',
+    source_url: 'https://www.826valencia.org/volunteer/', action_url: 'https://www.826valencia.org/volunteer/',
+    action_kind: 'interest_form', action_label: 'Explore tutoring',
+    action_note: 'Volunteer onboarding and assignment are controlled by 826 Valencia.',
+    donation_url: 'https://give.826valencia.org/campaign/699436/donate',
+  }),
+  item({
+    id: 'larkin-street-youth-sf', title: 'Support young people facing homelessness',
+    organization_name: 'Larkin Street Youth Services',
+    summary: 'Help distribute supplies to young people in shelters and housing, or explore tutoring and group roles.',
+    latitude: 37.781, longitude: -122.414, cause_tags: ['youth', 'housing', 'homelessness'],
+    schedule_text: 'Volunteer schedule is arranged after inquiry.',
+    source_url: 'https://larkinstreetyouth.org/volunteer/', action_url: 'https://larkinstreetyouth.org/volunteer/',
+    action_kind: 'interest_form', action_label: 'Send volunteer interest',
+    action_note: 'The organization reviews inquiries and contacts volunteers about suitable roles.',
+  }),
+  item({
+    id: 'family-house-sf', title: 'Support families during medical care', organization_name: 'Family House',
+    summary: 'Help provide a welcoming place for families whose children are receiving medical treatment in San Francisco.',
+    latitude: 37.771, longitude: -122.391, cause_tags: ['families', 'health', 'children'],
+    schedule_text: 'Individual and group opportunities are arranged with the volunteer team.',
+    source_url: 'https://familyhouseinc.org/volunteer/', action_url: 'https://familyhouseinc.org/volunteer/',
+    action_kind: 'interest_form', action_label: 'Explore Family House roles',
+    action_note: 'The organization determines current needs and confirms any volunteer arrangement.',
+  }),
+  item({
+    id: 'sf-lgbt-center-volunteer', title: 'Welcome and support LGBTQ neighbors', organization_name: 'SF LGBT Center',
+    summary: 'Explore welcome desk, event, outreach, and administrative roles supporting LGBTQ people and allies.',
+    latitude: 37.771, longitude: -122.424, cause_tags: ['lgbtq', 'community', 'equity'],
+    schedule_text: 'Apply and attend orientation before taking a role; individual shift timing varies.',
+    source_url: 'https://www.sfcenter.org/program/volunteer/', action_url: 'https://www.sfcenter.org/program/volunteer/',
+    action_kind: 'interest_form', action_label: 'Apply to volunteer',
+    action_note: 'Application and orientation do not guarantee a specific assignment.',
+  }),
+  item({
+    id: 'sf-aids-foundation-volunteer', title: 'Support health access', organization_name: 'San Francisco AIDS Foundation',
+    summary: 'Explore volunteering for health services, community events, or advocacy for people affected by HIV.',
+    latitude: 37.776, longitude: -122.405, cause_tags: ['health', 'hiv', 'equity'],
+    schedule_text: 'Current opportunities and eligibility are published in the volunteer portal.',
+    source_url: 'https://www.sfaf.org/get-involved/volunteer/', action_url: 'https://volunteers.sfaf.org/',
+    action_kind: 'role_directory', action_label: 'Check health roles',
+    action_note: 'A listed program is not proof of an open shift; verify in the provider portal.',
+  }),
+  item({
+    id: 'parks-conservancy-presidio', title: 'Care for Presidio habitats',
+    organization_name: 'Golden Gate National Parks Conservancy',
+    summary: 'Help restore park habitats and care for shared natural spaces in San Francisco.',
+    latitude: 37.801, longitude: -122.466, cause_tags: ['environment', 'parks', 'climate'], weekly_days: ['Saturday'],
+    schedule_text: 'Presidio Habitat Stewards publish Saturday sessions, 9 am to noon; confirm a dated event.',
+    source_url: 'https://www.parksconservancy.org/volunteer/community-volunteer-programs',
+    action_url: 'https://www.parksconservancy.org/volunteer',
+    action_kind: 'role_directory', action_label: 'Find park events',
+    action_note: 'A regular program schedule does not confirm an open spot on a given Saturday.',
+  }),
+  item({
+    id: 'friends-sf-public-library', title: 'Support access to books',
+    organization_name: 'Friends of the San Francisco Public Library',
+    summary: 'Volunteer with donated books, online sales, or the Main Library bookstore to support free public resources.',
+    latitude: 37.779, longitude: -122.416, cause_tags: ['books', 'literacy', 'education'],
+    schedule_text: 'Bookstore roles ask for a weekly three-hour shift and a six-month commitment; days vary.',
+    source_url: 'https://www.friendssfpl.org/volunteer.html', action_url: 'https://www.friendssfpl.org/volunteer.html',
+    action_kind: 'official_page', action_label: 'Explore library roles',
+    action_note: 'The organization confirms the role, schedule, and required commitment.',
+  }),
+];
