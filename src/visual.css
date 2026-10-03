@@ -1,4 +1,13 @@
 .atlas-stage { background: #020a16; }
+.marker-badge.marker-monogram, .organization-mark.is-monogram { color: var(--mark-ink); background: var(--mark-bg); }
+[data-mark-tone="0"] { --mark-ink: #fff; --mark-bg: #246d62; }
+[data-mark-tone="1"] { --mark-ink: #fff; --mark-bg: #976126; }
+[data-mark-tone="2"] { --mark-ink: #fff; --mark-bg: #486995; }
+[data-mark-tone="3"] { --mark-ink: #fff; --mark-bg: #895268; }
+[data-mark-tone="4"] { --mark-ink: #fff; --mark-bg: #2b6d87; }
+[data-mark-tone="5"] { --mark-ink: #fff; --mark-bg: #777026; }
+[data-mark-tone="6"] { --mark-ink: #fff; --mark-bg: #5d5c95; }
+[data-mark-tone="7"] { --mark-ink: #fff; --mark-bg: #527840; }
 .globe-frame::before {
   content: '';
   position: absolute;
