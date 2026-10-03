@@ -47,7 +47,8 @@ Supabase Compute is private alpha and is outside this demo's critical path. Bedr
 
 - Live Supabase migration and readback: nine published records, nine sourced records, one RLS policy, pgvector installed, search function installed.
 - TypeScript and Vite build: passed locally.
-- Protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions. The rendered desktop path showed a Lagos search, one Lagos result, a globe flight and the official link.
+- Protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions.
+- Local rendered desktop and phone paths: Lagos search produced one result, globe focus and official action; an unmatched query showed a clear empty state and zero markers.
 - Semantic retrieval: unverified until the Gemini key is configured and document embeddings are stored.
 - Voice: unverified until the OpenAI key is configured and a browser session completes a search.
 - Registration, admission, payment, attendance: not implemented; external provider authority.
