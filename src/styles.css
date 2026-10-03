@@ -28,6 +28,7 @@ a { color: inherit; }
 .globe-marker { display: grid; place-items: center; width: 51px; height: 51px; padding: 0; background: transparent; border: 0; border-radius: 50%; transition: opacity .28s ease; }
 .marker-badge { display: grid; place-items: center; width: 38px; height: 38px; overflow: hidden; color: #183b4e; background: #fffdf6; border: 2px solid #fffdf6; border-radius: 50%; box-shadow: 0 0 0 5px #e8b77e5c, 0 5px 19px #02121eac; transition: transform .2s ease, box-shadow .2s ease; }
 .marker-badge img { width: 100%; height: 100%; object-fit: contain; }
+.marker-badge.logo-on-dark { background: #18394a; }
 .marker-monogram { font-size: 10px; font-weight: 800; }
 .globe-marker:hover .marker-badge, .globe-marker:focus-visible .marker-badge, .globe-marker.is-selected .marker-badge { transform: scale(1.15); box-shadow: 0 0 0 7px #f0bb7e8c, 0 6px 22px #02121edb; }
 .globe-marker.is-event .marker-badge { box-shadow: 0 0 0 5px #d985747d, 0 5px 19px #02121eac; }
@@ -147,6 +148,7 @@ a { color: inherit; }
 .result-row:hover, .result-row.is-selected { border-color: #c39a70; background: #fff8ed; }
 .organization-mark { flex: none; display: grid; place-items: center; width: 41px; height: 41px; overflow: hidden; color: #284e5c; background: #fff; border: 1px solid #dfe7df; border-radius: 12px; }
 .organization-mark img { width: 100%; height: 100%; object-fit: contain; }
+.organization-mark.logo-on-dark { background: #18394a; }
 .organization-mark > span { font-size: 11px; font-weight: 800; }
 .result-main { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
 .result-main strong { font-size: 14px; font-weight: 710; line-height: 1.28; }
