@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Helios logo directions</title>
+  <desc id="desc">Three vector marks: Meridian, Horizon, and Passage, each shown on light and dark backgrounds.</desc>
+  <rect width="1200" height="520" fill="#F1F0E9"/>
+  <text x="46" y="48" fill="#15384B" font-family="Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="5">HELIOS</text>
+  <text x="46" y="75" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">A mark for finding a place in the world, then moving toward it.</text>
+  <g transform="translate(42 108)">
+    <rect width="352" height="360" rx="22" fill="#FFFFFF" stroke="#C98155" stroke-width="3"/>
+    <rect x="14" y="14" width="324" height="215" rx="16" fill="#0B2233"/>
+    <g transform="translate(110 45) scale(1.4)">
+      <circle cx="48" cy="48" r="38" fill="none" stroke="#E8BE80" stroke-width="5"/>
+      <path d="M31 18C24 36 24 60 31 78M65 18C72 36 72 60 65 78M27 48H69" fill="none" stroke="#E8BE80" stroke-width="5.5" stroke-linecap="round"/>
+      <circle cx="68" cy="48" r="7" fill="#E98756" stroke="#102B3B" stroke-width="3"/>
+    </g>
+    <circle cx="34" cy="255" r="16" fill="#0B2233"/>
+    <g transform="translate(18 239) scale(.333)">
+      <circle cx="48" cy="48" r="38" fill="none" stroke="#E8BE80" stroke-width="6"/>
+      <path d="M31 18C24 36 24 60 31 78M65 18C72 36 72 60 65 78M27 48H69" fill="none" stroke="#E8BE80" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="68" cy="48" r="7" fill="#E98756"/>
+    </g>
+    <text x="59" y="261" fill="#15384B" font-family="Arial, sans-serif" font-size="16" font-weight="700">Meridian · Selected</text>
+    <text x="20" y="306" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">The globe and an H share one form.</text>
+    <text x="20" y="329" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">A destination sits on the equator.</text>
+  </g>
+  <g transform="translate(424 108)">
+    <rect width="352" height="360" rx="22" fill="#FFFFFF"/>
+    <rect x="14" y="14" width="324" height="215" rx="16" fill="#0B2233"/>
+    <g transform="translate(110 45) scale(1.4)" fill="none">
+      <path d="M18 59C23 37 38 22 57 19C68 17 77 19 84 24" stroke="#E8BE80" stroke-width="7" stroke-linecap="round"/>
+      <path d="M16 60C31 50 63 50 80 60" stroke="#E8BE80" stroke-width="7" stroke-linecap="round"/>
+      <path d="M24 69C40 78 61 78 76 69" stroke="#E8BE80" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="78" cy="28" r="7" fill="#E98756"/>
+    </g>
+    <circle cx="34" cy="255" r="16" fill="#0B2233"/>
+    <g transform="translate(18 239) scale(.333)" fill="none">
+      <path d="M18 59C23 37 38 22 57 19C68 17 77 19 84 24" stroke="#E8BE80" stroke-width="7" stroke-linecap="round"/>
+      <path d="M16 60C31 50 63 50 80 60" stroke="#E8BE80" stroke-width="7" stroke-linecap="round"/>
+      <path d="M24 69C40 78 61 78 76 69" stroke="#E8BE80" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="78" cy="28" r="7" fill="#E98756"/>
+    </g>
+    <text x="59" y="261" fill="#15384B" font-family="Arial, sans-serif" font-size="16" font-weight="700">Horizon</text>
+    <text x="20" y="306" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">Earth, a rising light, and a</text>
+    <text x="20" y="329" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">single place to move toward.</text>
+  </g>
+  <g transform="translate(806 108)">
+    <rect width="352" height="360" rx="22" fill="#FFFFFF"/>
+    <rect x="14" y="14" width="324" height="215" rx="16" fill="#0B2233"/>
+    <g transform="translate(110 45) scale(1.4)" fill="none">
+      <path d="M77 29A37 37 0 1 0 80 64" stroke="#E8BE80" stroke-width="6" stroke-linecap="round"/>
+      <path d="M24 55C36 59 56 57 72 38" stroke="#E8BE80" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="75" cy="35" r="7" fill="#E98756" stroke="#102B3B" stroke-width="2"/>
+    </g>
+    <circle cx="34" cy="255" r="16" fill="#0B2233"/>
+    <g transform="translate(18 239) scale(.333)" fill="none">
+      <path d="M77 29A37 37 0 1 0 80 64" stroke="#E8BE80" stroke-width="6" stroke-linecap="round"/>
+      <path d="M24 55C36 59 56 57 72 38" stroke="#E8BE80" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="75" cy="35" r="7" fill="#E98756"/>
+    </g>
+    <text x="59" y="261" fill="#15384B" font-family="Arial, sans-serif" font-size="16" font-weight="700">Passage</text>
+    <text x="20" y="306" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">An open world with a path</text>
+    <text x="20" y="329" fill="#5C7379" font-family="Arial, sans-serif" font-size="14">that ends in a real action.</text>
+  </g>
+</svg>

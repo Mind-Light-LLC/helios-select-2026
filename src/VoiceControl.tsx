@@ -1,14 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { requestVoiceToken, searchCatalog } from '@api';
+import { requestVoiceToken, searchCatalog, type NeedView } from '@api';
 import type { HeliosItem, SearchResponse } from './types';
+import { isCurrentReview } from './sfSearch';
+import { requestMicrophone } from './voiceMedia';
+import { executeNeedVoiceTool } from './voiceNeedTools';
 
 type Props = {
+  available: boolean;
   onSearch: (response: SearchResponse) => void;
   onFocus: (id: string) => void;
+  onNeed: (id: string, offer?: string) => void;
   results: HeliosItem[];
+  startRequest: number;
+  onUnavailable?: () => void;
 };
 
+type VoiceState = 'idle' | 'requesting' | 'connecting' | 'ready' | 'listening' | 'searching' | 'responding';
 type FunctionCall = { type: 'function_call'; name: string; call_id: string; arguments: string };
+type RealtimeEvent = Record<string, unknown> & { type: string };
 
 function isFunctionCall(value: unknown): value is FunctionCall {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'function_call'
@@ -17,87 +26,186 @@ function isFunctionCall(value: unknown): value is FunctionCall {
     && 'arguments' in value && typeof value.arguments === 'string';
 }
 
-function getStringField(raw: string, name: string): string {
+function isRealtimeEvent(value: unknown): value is RealtimeEvent {
+  return typeof value === 'object' && value !== null && 'type' in value && typeof value.type === 'string';
+}
+
+function toolArguments(raw: string): Record<string, unknown> {
   let value: unknown;
   try { value = JSON.parse(raw); } catch { throw new Error('Voice request was invalid.'); }
-  if (typeof value !== 'object' || value === null || !(name in value)) throw new Error('Voice request was incomplete.');
-  const field: unknown = (value as Record<string, unknown>)[name];
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('Voice request was invalid.');
+  return value as Record<string, unknown>;
+}
+
+function getStringField(args: Record<string, unknown>, name: string): string {
+  const field = args[name];
   if (typeof field !== 'string' || !field.trim()) throw new Error('Voice request was incomplete.');
   return field.trim();
 }
 
-export function VoiceControl({ onSearch, onFocus, results }: Props) {
-  const [state, setState] = useState<'idle' | 'connecting' | 'listening'>('idle');
+function optionalStringField(args: Record<string, unknown>, name: string): string | undefined {
+  if (!(name in args)) return undefined;
+  return getStringField(args, name);
+}
+
+const stateLabel: Record<Exclude<VoiceState, 'idle'>, string> = {
+  requesting: 'Requesting microphone',
+  connecting: 'Connecting',
+  ready: 'Microphone on',
+  listening: 'Listening',
+  searching: 'Searching',
+  responding: 'Responding',
+};
+
+export function VoiceControl({ available, onSearch, onFocus, onNeed, results, startRequest, onUnavailable }: Props) {
+  const [state, setState] = useState<VoiceState>('idle');
+  const [caption, setCaption] = useState('');
   const [error, setError] = useState<string | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const searchRef = useRef<AbortController | null>(null);
+  const connectRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const resultsRef = useRef(results);
-  const callbacksRef = useRef({ onSearch, onFocus });
-  useEffect(() => { resultsRef.current = results; callbacksRef.current = { onSearch, onFocus }; }, [results, onSearch, onFocus]);
+  const needsRef = useRef<NeedView[]>([]);
+  const callbacksRef = useRef({ onSearch, onFocus, onNeed });
+  useEffect(() => { resultsRef.current = results; callbacksRef.current = { onSearch, onFocus, onNeed }; }, [results, onSearch, onFocus, onNeed]);
 
-  function stop() {
-    generationRef.current += 1;
+  function releaseResources() {
+    searchRef.current?.abort();
+    searchRef.current = null;
+    connectRef.current?.abort();
+    connectRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     peerRef.current?.close();
     peerRef.current = null;
+    audioRef.current?.pause();
     if (audioRef.current) audioRef.current.srcObject = null;
     audioRef.current = null;
+  }
+
+  function stop() {
+    generationRef.current += 1;
+    releaseResources();
+    setCaption('');
     setState('idle');
   }
 
   useEffect(() => () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    peerRef.current?.close();
+    generationRef.current += 1;
+    releaseResources();
   }, []);
 
-  async function handleCall(call: FunctionCall, channel: RTCDataChannel) {
+  async function handleCall(call: FunctionCall, channel: RTCDataChannel, generation: number) {
     let output: Record<string, unknown>;
+    let activeController: AbortController | null = null;
     try {
+      const args = toolArguments(call.arguments);
       if (call.name === 'search_catalog') {
-        const query = getStringField(call.arguments, 'query');
-        const response = await searchCatalog(query);
+        const query = getStringField(args, 'query');
+        const country = optionalStringField(args, 'country');
+        searchRef.current?.abort();
+        const controller = new AbortController();
+        activeController = controller;
+        searchRef.current = controller;
+        setState('searching');
+        setCaption(`Searching for ${query}`);
+        const response = await searchCatalog(query, country ? { country } : {}, controller.signal);
+        if (generation !== generationRef.current || controller.signal.aborted) return;
         callbacksRef.current.onSearch(response);
         resultsRef.current = response.items;
         output = {
           mode: response.mode,
+          reason_codes: response.reason_codes ?? [],
           count: response.items.length,
           catalog_count: response.catalog_count,
-          records: response.items.slice(0, 8).map((item) => ({
+          coverage: response.coverage,
+          applied_filters: response.applied_filters,
+          no_match_meaning: response.items.length === 0 ? 'No match in this limited catalog, not proof that no opportunity exists.' : null,
+          records: response.items.slice(0, 15).map((item) => ({
             id: item.id, title: item.title, kind: item.record_kind,
             organization: item.organization_name, country: item.country,
             place: item.place_label, pin_meaning: item.pin_meaning, schedule: item.schedule_text,
             summary: item.summary, source_url: item.source_url,
-            action_url: item.action_url, source_checked_at: item.source_checked_at,
+            action_url: item.action_url, action_kind: item.action_kind,
+            action_label: item.action_label, action_note: item.action_note,
+            availability_status: item.availability_status, source_checked_at: item.source_checked_at,
+            cause_tags: item.cause_tags, weekly_days: item.weekly_days,
+            donation_url: item.donation_url,
+            donation_minimum_usd: isCurrentReview(item) ? item.donation_minimum_usd : null,
+            review_due_at: item.review_due_at,
+            publication_state: item.publication_state, action_authority: item.action_authority,
           })),
         };
+        if (searchRef.current === controller) searchRef.current = null;
       } else if (call.name === 'focus_result') {
-        const id = getStringField(call.arguments, 'id');
+        const id = getStringField(args, 'id');
         const result = resultsRef.current.find((item) => item.id === id);
         if (!result) throw new Error('That result is not in the current search.');
         callbacksRef.current.onFocus(id);
-        output = { focused: true, title: result.title, country: result.country, source_url: result.source_url };
+        output = { focused: true, title: result.title, summary: result.summary,
+          schedule: result.schedule_text, availability_status: result.availability_status,
+          action_url: result.action_url, donation_url: result.donation_url,
+          country: result.country, source_url: result.source_url };
+      } else if (['list_sourced_needs', 'check_offer', 'focus_need'].includes(call.name)) {
+        const result = await executeNeedVoiceTool(call.name, args, needsRef.current, callbacksRef.current.onNeed);
+        needsRef.current = result.needs;
+        output = result.output;
       } else {
         throw new Error('Unknown voice action.');
       }
-    } catch (cause) {
+    } catch (cause: unknown) {
+      if (generation !== generationRef.current) return;
+      if (activeController?.signal.aborted) return;
+      if (searchRef.current === activeController) searchRef.current = null;
       output = { error: cause instanceof Error ? cause.message : 'Voice action failed.' };
     }
-    if (channel.readyState !== 'open') return;
-    channel.send(JSON.stringify({
-      type: 'conversation.item.create',
-      item: { type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(output) },
-    }));
-    channel.send(JSON.stringify({ type: 'response.create' }));
+    if (generation !== generationRef.current || channel.readyState !== 'open') return;
+    try {
+      channel.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: { type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(output) },
+      }));
+      channel.send(JSON.stringify({ type: 'response.create' }));
+      setState('responding');
+    } catch {
+      setError('Voice response could not continue.');
+    }
+  }
+
+  function handleEvent(event: RealtimeEvent, channel: RTCDataChannel, generation: number) {
+    if (generation !== generationRef.current) return;
+    if (event.type === 'input_audio_buffer.speech_started') {
+      searchRef.current?.abort();
+      searchRef.current = null;
+      setCaption('');
+      setState('listening');
+    } else if (event.type === 'input_audio_buffer.speech_stopped') {
+      setState('responding');
+    } else if (event.type === 'response.created') {
+      setCaption('');
+      setState('responding');
+    } else if (event.type === 'response.output_audio_transcript.delta' && typeof event.delta === 'string') {
+      setCaption((current) => `${current}${event.delta}`.slice(-240));
+      setState('responding');
+    } else if (event.type === 'response.output_item.done' && isFunctionCall(event.item)) {
+      void handleCall(event.item, channel, generation);
+    } else if (event.type === 'output_audio_buffer.started') {
+      setState('responding');
+    } else if (event.type === 'output_audio_buffer.stopped') {
+      setState('ready');
+    } else if (event.type === 'error') {
+      setError('The voice session reported an error.');
+    }
   }
 
   async function start() {
-    if (state !== 'idle') return;
-    setState('connecting');
-    setError(null);
     const generation = ++generationRef.current;
+    setState('requesting');
+    setCaption('Hey, what’s up? I’m HeliOS. How would you like to help? A cause, a city, a free Sunday, or ten dollars is plenty to start.');
+    setError(null);
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('A microphone is unavailable in this browser.');
       const token = await requestVoiceToken();
@@ -107,50 +215,68 @@ export function VoiceControl({ onSearch, onFocus, results }: Props) {
       const audio = new Audio();
       audio.autoplay = true;
       audioRef.current = audio;
-      peer.ontrack = (event) => { audio.srcObject = event.streams[0] ?? null; };
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      peer.ontrack = (event) => { if (generation === generationRef.current) audio.srcObject = event.streams[0] ?? null; };
+      const stream = await requestMicrophone(generation, () => generationRef.current);
+      if (generation !== generationRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
-      if (generation !== generationRef.current) return;
       stream.getTracks().forEach((track) => peer.addTrack(track, stream));
       const channel = peer.createDataChannel('oai-events');
-      channel.addEventListener('open', () => { if (generation === generationRef.current) setState('listening'); });
+      channel.addEventListener('open', () => {
+        if (generation !== generationRef.current) return;
+        setState('ready');
+        channel.send(JSON.stringify({ type: 'response.create' }));
+      });
       channel.addEventListener('message', (event: MessageEvent<string>) => {
         try {
           const payload: unknown = JSON.parse(event.data);
-          if (typeof payload !== 'object' || payload === null || !('type' in payload)) return;
-          if (payload.type === 'response.output_item.done' && 'item' in payload && isFunctionCall(payload.item)) {
-            void handleCall(payload.item, channel);
-          }
-          if (payload.type === 'error' && 'error' in payload) setError('The voice session reported an error.');
-        } catch { setError('The voice session sent an unreadable event.'); }
+          if (isRealtimeEvent(payload)) handleEvent(payload, channel, generation);
+        } catch { if (generation === generationRef.current) setError('The voice session sent an unreadable event.'); }
       });
       peer.addEventListener('connectionstatechange', () => {
         if (peer.connectionState === 'failed' && generation === generationRef.current) {
-          setError('The voice connection failed.');
           stop();
+          setError('The voice connection failed.');
         }
       });
+      setState('connecting');
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
+      if (generation !== generationRef.current) return;
       if (!offer.sdp) throw new Error('Could not start the voice connection.');
+      const controller = new AbortController();
+      connectRef.current = controller;
       const response = await fetch('https://api.openai.com/v1/realtime/calls', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token.value}`, 'Content-Type': 'application/sdp' },
         body: offer.sdp,
+        signal: controller.signal,
       });
       if (!response.ok) throw new Error(`Voice connection failed (${response.status}).`);
+      const answer = await response.text();
       if (generation !== generationRef.current) return;
-      await peer.setRemoteDescription({ type: 'answer', sdp: await response.text() });
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Voice could not start.');
+      connectRef.current = null;
+      await peer.setRemoteDescription({ type: 'answer', sdp: answer });
+    } catch (cause: unknown) {
+      if (generation !== generationRef.current) return;
       stop();
+      setError(cause instanceof Error ? cause.message : 'Voice could not start.');
+      onUnavailable?.();
     }
   }
 
+  useEffect(() => {
+    if (startRequest > 0 && available && state === 'idle') void start();
+  }, [startRequest]);
+
+  const active = state !== 'idle';
   return <div className="voice-control">
-    <button type="button" className={`voice-button ${state === 'listening' ? 'is-live' : ''}`} onClick={state === 'idle' ? start : stop}>
-      {state === 'idle' ? 'Talk to Helios' : state === 'connecting' ? 'Connecting… Stop' : 'Listening · Stop'}
+    <button type="button" className={`voice-button ${active ? 'is-live' : ''}`} onClick={active ? stop : () => void start()} disabled={!available} aria-label={active ? 'Stop voice' : available ? 'Start voice' : 'Voice unavailable'} aria-pressed={active} title={!available ? 'Voice is unavailable right now' : undefined}>
+      <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" /></svg>
     </button>
+    {active && <div className="voice-status" role="status" aria-live="polite"><strong>{stateLabel[state]}</strong>{caption && <p>{caption}</p>}</div>}
     {error && <span className="voice-error" role="alert">{error}</span>}
   </div>;
 }

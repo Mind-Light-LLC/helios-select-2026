@@ -1,0 +1,44 @@
+.need-panel { position: absolute; top: 86px; right: clamp(20px, 3.8vw, 56px); bottom: 110px; z-index: 13; width: min(430px, calc(100vw - 40px)); padding: 21px; overflow-y: auto; color: #173340; background: #fbfcf8f7; border: 1px solid #fff; border-radius: 24px; box-shadow: 0 24px 74px #0417268a; backdrop-filter: blur(24px); }
+.need-head { display: flex; align-items: center; justify-content: space-between; }
+.need-head span, .need-label { color: #9b6947; font-size: 10px; font-weight: 790; letter-spacing: .14em; }
+.need-head button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; color: #58717a; background: #e8eeea; border: 0; border-radius: 50%; font-size: 24px; }
+.need-place { margin: 10px 0 3px; color: #647d81; font-size: 12px; }
+.need-panel h2 { margin: 0 0 9px; font-size: 29px; line-height: 1.1; letter-spacing: -.045em; }
+.need-summary, .need-truth p { margin: 0; color: #546e76; font-size: 13px; line-height: 1.48; }
+.need-truth { margin: 17px 0; padding: 13px; background: #e9f0eb; border-left: 3px solid #6b997e; border-radius: 11px; }
+.need-truth strong { display: block; margin-bottom: 5px; font-size: 12px; }
+.need-label { margin: 17px 0 9px; }
+.need-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.need-tags span { padding: 6px 9px; color: #365663; background: #eef2ed; border: 1px solid #dee7dd; border-radius: 99px; font-size: 11px; }
+.need-offer { margin-top: 20px; }
+.need-offer label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 740; }
+.need-offer > div { display: flex; gap: 6px; }
+.need-offer .need-offer-top { align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.need-offer-top label { margin: 0; }
+.need-offer input { flex: 1; min-width: 0; min-height: 44px; padding: 0 11px; color: #18323f; background: #fff; border: 1px solid #cfdbd8; border-radius: 10px; font-size: 12px; }
+.need-offer button { flex: none; padding: 0 11px; color: #fff9ed; background: #173e52; border: 0; border-radius: 10px; font-size: 12px; font-weight: 730; }
+.need-offer button.need-voice { min-height: 34px; color: #173e52; background: #e1ebe7; }
+.need-offer button.need-voice:disabled { color: #708380; opacity: .7; }
+.need-assessment { margin-top: 11px; padding: 12px; border-radius: 11px; background: #eef2ed; }
+.need-assessment.is-not_eligible { background: #fcf0ec; }
+.need-assessment.is-possible { background: #e9f1e8; }
+.need-assessment strong { font-size: 12px; }
+.need-assessment p { margin: 5px 0 7px; color: #546e76; font-size: 12px; line-height: 1.4; }
+.need-assessment a, .need-routes a { color: #9b633f; font-size: 12px; font-weight: 720; text-underline-offset: 3px; }
+.need-routes { display: grid; gap: 8px; }
+.need-routes > div { padding: 11px 12px; background: #fff; border: 1px solid #e3e9e2; border-radius: 12px; }
+.need-routes strong { font-size: 12px; }
+.need-routes p { margin: 5px 0 7px; color: #667d82; font-size: 11px; line-height: 1.4; }
+.need-evidence { margin-top: 15px; padding: 12px; background: #f0f3ef; border-radius: 11px; }
+.need-evidence summary { color: #365663; cursor: pointer; font-size: 12px; font-weight: 720; }
+.need-evidence ol { display: grid; gap: 8px; margin: 11px 0 0; padding-left: 18px; }
+.need-evidence li { padding-left: 2px; font-size: 11px; }
+.need-evidence li strong { margin-right: 7px; }
+.need-evidence li span { color: #7a8380; }
+.need-evidence li span.is-documented { color: #488267; }
+.need-evidence li p { margin: 3px 0 0; color: #667d82; line-height: 1.35; }
+.need-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 15px; padding-top: 13px; border-top: 1px solid #dfe7df; color: #6e8386; font-size: 11px; }
+.need-footer a { color: #9b633f; font-weight: 720; }
+.need-share { display: flex; gap: 6px; margin-left: auto; }
+.need-footer button { padding: 5px 9px; color: #365663; background: #e8eeea; border: 0; border-radius: 7px; font-size: 11px; }
+@media (max-width: 760px) { .need-panel { top: 70px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); left: 12px; width: auto; padding: 18px; } }

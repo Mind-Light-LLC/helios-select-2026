@@ -53,13 +53,15 @@ Every new public and private table has RLS enabled. `anon` has no INSERT privile
 
 Before `20261003202911_source_review_deadlines.sql`, the linked database had no `helios_items.review_due_at` column. All nine `source_checks` rows had a null review deadline. The migration adds a seven-day review date to published catalog items and source checks, then requires a review date on future published rows. A passed review date flags stale evidence; it does not itself assert that the provider has closed the opportunity.
 
-## Partner need card migration status
+## Partner need card migration and live readback
 
-`supabase db push --linked --dry-run` on 2026-10-03 listed only `20261003210000_partner_need_cards.sql`. The dry run made no database changes. The new table and policies have not been applied or read back live. The need editor's authenticated save and submit path is therefore **UNVERIFIED** against the linked project; the public Needs sheet can show only the reviewed public signal until the migration and an authorized partner review are complete.
+Before the push on 2026-10-03, a fresh linked query found no `public.need_cards` table, nine organizations, nine published catalog items, RLS enabled on `organizations`, and three existing saved-action policies. The dry run named only `20261003210000_partner_need_cards.sql`; its SHA-256 matched the file in the reviewed PR. The linked push then applied that one migration to the isolated HeliOS project.
+
+A subsequent live query found `public.need_cards`, RLS enabled, zero rows, the `published_need_has_partner_proof` constraint, and exactly three policies: public-or-owner read, owner draft insert, and owner draft update. `anon` has SELECT but no INSERT privilege; `authenticated` has INSERT. The remote migration ledger contains `20261003210000`. This proves the schema and access contract, not an authenticated browser save, an approved partner request, or a delivered resource. Those flows remain **UNVERIFIED** until tested with a consenting account and provider evidence.
 
 ## Source review deadline live readback
 
-The deadline migration was applied from an isolated migration directory after its linked-project dry run named only `20261003202911_source_review_deadlines.sql`. This avoided applying the concurrently authored `20261003210000_partner_need_cards.sql`, which remains local and unapplied. A fresh linked readback returned nine source checks and nine non-null deadlines, all due `2026-10-10 18:27:04.7688 UTC`. The remote migration ledger contains the deadline migration and does not contain the partner need-card migration. This proves deadlines were stored; an automated review queue and refreshed provider checks remain unverified.
+The deadline migration was applied from an isolated migration directory after its linked-project dry run named only `20261003202911_source_review_deadlines.sql`. This avoided applying the concurrently authored `20261003210000_partner_need_cards.sql` at that point. A fresh linked readback returned nine source checks and nine non-null deadlines, all due `2026-10-10 18:27:04.7688 UTC`. The remote migration ledger then contained the deadline migration but not the partner need-card migration. This proves deadlines were stored; an automated review queue and refreshed provider checks remain unverified.
 
 ## Account saved actions preflight and live readback
 

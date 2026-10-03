@@ -1,55 +1,153 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { loadCatalog, searchCatalog } from '@api';
 import { Globe } from './Globe';
 import { VoiceControl } from './VoiceControl';
-import type { HeliosItem, SearchResponse } from './types';
+import { BrowserVoiceAgent } from './BrowserVoiceAgent';
+import { NeedHub } from './NeedHub';
+import { AuthPanel } from './AuthPanel';
+import { OpportunityDetail } from './OpportunityDetail';
+import { OrganizationMark } from './OrganizationMark';
+import { AgentWorkbench } from './AgentWorkbench';
+import { GuidePanel } from './GuidePanel';
+import { isCurrentReview } from './sfSearch';
+import type { HeliosItem, MatchReason, SearchResponse } from './types';
 
-function checkedLabel(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Check date unavailable' : `Checked ${date.toLocaleDateString()}`;
+const exampleQueries = [
+  'Where can I volunteer this Sunday?',
+  'Find food relief in San Francisco',
+  'What can $10 support?',
+  'Show opportunities in Lagos',
+  'How can I help from anywhere?',
+];
+
+function matchDetail(mode: SearchResponse['mode'] | null, fit: SearchResponse['fit'], reasons: MatchReason[], count: number, query: string): string {
+  if (reasons.includes('location_unknown')) return 'Place unknown. Name a city or country.';
+  if (reasons.includes('location_mismatch') && count === 0) return 'No sourced record in that place.';
+  if (reasons.includes('eligibility_unverified')) return 'Eligibility unknown from these sources.';
+  if (reasons.includes('availability_unconfirmed') && count === 0) return 'No confirmed opening in this catalog.';
+  if (reasons.includes('schedule_unverified') && count === 0) return 'Timing unknown from these sources.';
+  if (reasons.includes('date_mismatch') && count === 0) return 'No sourced record on that date.';
+  if (fit === 'no_match' || count === 0) return 'No match in this catalog';
+  if (mode === null) return 'Browse the catalog';
+  if (/\$\s*\d+|\bdonat\w*\b|\bdollars?\b/i.test(query)) return 'Official donation paths. Check the amount on each organization’s site.';
+  if (reasons.includes('location_mismatch')) return 'Place differs from your request';
+  if (reasons.includes('date_mismatch') || reasons.includes('schedule_mismatch')) return 'Timing differs from your request';
+  if (fit === 'related_path') return 'Related path. Check the details.';
+  if (reasons.includes('availability_unconfirmed')) return 'Published path. Confirm an open spot with the organization.';
+  if (mode === 'keyword') return 'Text match. Check place and timing.';
+  return 'Sourced path to explore';
 }
 
 export default function App() {
   const [query, setQuery] = useState('');
+  const [exampleIndex, setExampleIndex] = useState(0);
   const [items, setItems] = useState<HeliosItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('item'));
   const [catalogCount, setCatalogCount] = useState(0);
   const [mode, setMode] = useState<SearchResponse['mode'] | null>(null);
+  const [fit, setFit] = useState<SearchResponse['fit']>();
+  const [reasonCodes, setReasonCodes] = useState<MatchReason[]>([]);
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(Boolean(selectedId));
+  const [agentOpen, setAgentOpen] = useState(false);
+  const [mcpHandoffId, setMcpHandoffId] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [needId, setNeedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('need'));
+  const [needsOpen, setNeedsOpen] = useState(() => Boolean(new URLSearchParams(window.location.search).get('need')));
+  const [spokenOffer, setSpokenOffer] = useState<{ text: string } | null>(null);
+  const [voiceStartRequest, setVoiceStartRequest] = useState(0);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  const detailCloseRef = useRef<HTMLButtonElement>(null);
+  const resultRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const returnFocusIdRef = useRef<string | null>(selectedId);
   const selected = items.find((item) => item.id === selectedId) ?? null;
+  const donationSearch = /\$\s*\d+|\bdonat\w*\b|\bdollars?\b/i.test(query);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = window.setInterval(() => setExampleIndex((index) => (index + 1) % exampleQueries.length), 4200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
+    requestRef.current = controller;
     loadCatalog(controller.signal).then((response) => {
+      if (controller.signal.aborted) return;
       setItems(response.items);
+      setSelectedId((current) => current && response.items.some((item) => item.id === current) ? current : null);
       setCatalogCount(response.catalog_count);
+      setVoiceAvailable(response.voice_available);
       setError(null);
     }).catch((cause: unknown) => {
-      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Catalog unavailable.');
-    }).finally(() => { if (!controller.signal.aborted) setBusy(false); });
+      if (!controller.signal.aborted) {
+        setError(cause instanceof Error ? cause.message : 'Catalog unavailable.');
+        setResultsOpen(true);
+      }
+    }).finally(() => {
+      if (!controller.signal.aborted) setBusy(false);
+      if (requestRef.current === controller) requestRef.current = null;
+    });
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (selectedId) url.searchParams.set('item', selectedId);
+    else url.searchParams.delete('item');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [selectedId]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (needsOpen && needId) url.searchParams.set('need', needId);
+    else url.searchParams.delete('need');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [needsOpen, needId]);
+
+  useEffect(() => {
+    if (selected) detailCloseRef.current?.focus();
+    else if (!busy && resultsOpen && returnFocusIdRef.current) {
+      resultRefs.current.get(returnFocusIdRef.current)?.focus();
+      returnFocusIdRef.current = null;
+    }
+  }, [selected, busy, resultsOpen]);
 
   const acceptSearch = useCallback((response: SearchResponse) => {
     setItems(response.items);
     setCatalogCount(response.catalog_count);
     setMode(response.mode);
-    setSelectedId(response.items[0]?.id ?? null);
+    setFit(response.fit);
+    setReasonCodes(response.reason_codes ?? []);
+    setSelectedId(response.mode === 'keyword' ? null : response.items[0]?.id ?? null);
+    setResultsOpen(true);
     setError(null);
   }, []);
 
   const runSearch = useCallback(async (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
+    setNeedsOpen(false);
+    setAgentOpen(false);
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     setBusy(true);
+    setResultsOpen(true);
+    setQuery(trimmed);
     try {
-      acceptSearch(await searchCatalog(trimmed));
-      setQuery(trimmed);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Search unavailable.');
+      const response = await searchCatalog(trimmed, {}, controller.signal);
+      if (!controller.signal.aborted) acceptSearch(response);
+    } catch (cause: unknown) {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Search unavailable.');
     } finally {
-      setBusy(false);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setBusy(false);
+      }
     }
   }, [acceptSearch]);
 
@@ -59,78 +157,122 @@ export default function App() {
   }
 
   const showAll = async () => {
+    setNeedsOpen(false);
+    setAgentOpen(false);
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     setBusy(true);
+    setResultsOpen(true);
     try {
-      const response = await loadCatalog();
+      const response = await loadCatalog(controller.signal);
+      if (controller.signal.aborted) return;
       setItems(response.items);
       setCatalogCount(response.catalog_count);
+      setVoiceAvailable(response.voice_available);
       setMode(null);
+      setFit(undefined);
+      setReasonCodes([]);
       setSelectedId(null);
       setQuery('');
       setError(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Catalog unavailable.');
+    } catch (cause: unknown) {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Catalog unavailable.');
     } finally {
-      setBusy(false);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setBusy(false);
+      }
     }
   };
 
+  const acceptVoiceSearch = (response: SearchResponse) => {
+    setNeedsOpen(false);
+    setAgentOpen(false);
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setBusy(false);
+    acceptSearch(response);
+  };
+
+  const focusItem = (id: string) => {
+    setNeedsOpen(false);
+    setAgentOpen(false);
+    returnFocusIdRef.current = id;
+    setSelectedId(id);
+    setResultsOpen(true);
+  };
+
+  const focusNeed = (id: string, offer?: string) => {
+    setSpokenOffer(offer ? { text: offer } : null);
+    setNeedId(id);
+    setAgentOpen(false);
+    setNeedsOpen(true);
+  };
+
   return <div className="app-shell">
-    <header className="site-header">
-      <a className="wordmark" href="/" aria-label="Helios home"><span className="brand-mark">H</span> HELIOS</a>
-      <span className="header-note">A Mind Light experiment</span>
-    </header>
-    <main className="main-layout">
-      <section className="discovery-panel" aria-label="Discover public benefit work">
-        <div className="intro">
-          <p className="eyebrow">A WORLD OF WORK TO DO</p>
-          <h1>Find where you can make a difference.</h1>
-          <p className="lead">Search real organizations and opportunities. Explore their place on the globe, check the source, and take the next step.</p>
+    <main className="atlas-stage">
+      <Globe items={items} selectedId={selectedId} onSelect={focusItem} onExplore={(place) => place ? void runSearch(`Show organizations in ${place}`) : setResultsOpen(true)} />
+      <header className="topbar">
+        <a className="wordmark" href="/" aria-label="Helios home"><img src="/brand/helios-mark.svg" alt="" /><span>HELIOS</span></a>
+        <nav className="top-actions" aria-label="Explore HeliOS">
+          <button type="button" onClick={() => { setGuideOpen(false); void showAll(); }} disabled={busy} aria-label="Find ways to help"><span className="nav-full">Find ways to help</span><span className="nav-compact">Browse</span></button>
+          <button type="button" onClick={() => { setGuideOpen(false); setSpokenOffer(null); setNeedId(null); setNeedsOpen((open) => !open); setAgentOpen(false); }} aria-expanded={needsOpen} aria-controls="need-window" aria-label="Explore sourced needs"><span className="nav-full">Explore needs</span><span className="nav-compact">Needs</span></button>
+          <button type="button" onClick={() => { setGuideOpen(false); setAgentOpen((open) => !open); setNeedsOpen(false); }} aria-expanded={agentOpen} aria-controls="agent-window" aria-label="Connect an agent"><span className="nav-full">Connect agents</span><span className="nav-compact">Agents</span></button>
+          <button type="button" onClick={() => { setGuideOpen(false); setAccountOpen((open) => !open); }} aria-expanded={accountOpen} aria-label="My actions"><span className="nav-full">My actions</span><span className="nav-compact">Actions</span></button>
+        </nav>
+      </header>
+
+      {!resultsOpen && !selected && !needsOpen && <div className="hero-copy">
+        <p>THE HELIOS ATLAS</p>
+        <h1>Find a way<br />to help.</h1>
+        <div className="hero-actions"><button className="hero-voice-cta" type="button" onClick={() => setVoiceStartRequest((value) => value + 1)}>Talk to HeliOS <span aria-hidden="true">↗</span></button>
+          <button className="hero-guide-cta" type="button" onClick={() => setGuideOpen(true)}>How it works</button></div>
+      </div>}
+
+      {(resultsOpen || error) && !selected && !needsOpen && <aside className={`results-sheet ${error || (!busy && items.length < 4) ? 'is-compact' : ''}`} aria-label="Sourced opportunities">
+        <div className="sheet-heading">
+          <div><span className="sheet-kicker">{mode ? 'SEARCH RESULTS' : 'EXPLORE'}</span><h2>{mode ? 'Places to explore' : 'Sourced places'}</h2></div>
+          <button type="button" onClick={() => { setResultsOpen(false); setError(null); }} aria-label="Close results">×</button>
         </div>
-        <form className="search-form" onSubmit={handleSubmit}>
-          <label htmlFor="helios-search">What are you looking for?</label>
-          <div className="search-row">
-            <input id="helios-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. volunteer with food relief in Lagos" autoComplete="off" />
-            <button type="submit" disabled={busy || !query.trim()}>Search</button>
-          </div>
+        <p className="sheet-status" role="status">{busy ? 'Searching sourced records…' : error ? 'Catalog unavailable' : matchDetail(mode, fit, reasonCodes, items.length, query)} <span>{!busy && !error ? `${items.length} / ${catalogCount}` : ''}</span></p>
+        {error && <p className="sheet-error" role="alert">{error}</p>}
+        {!busy && !error && items.length === 0 && <p className="sheet-empty">Try another place, cause, or date. This catalog is still small.</p>}
+        <div className="result-list">
+          {!busy && !error && items.map((item) => <button type="button" className={`result-row ${selectedId === item.id ? 'is-selected' : ''}`} key={item.id} ref={(node) => { if (node) resultRefs.current.set(item.id, node); else resultRefs.current.delete(item.id); }} onClick={() => focusItem(item.id)}>
+            <OrganizationMark item={item} />
+            <span className="result-main"><strong>{item.title}</strong><small>{donationSearch ? `${item.organization_name} · ${item.donation_minimum_usd === 10 && isCurrentReview(item) ? '$10 minimum verified' : 'Check gift amount'}` : `${item.organization_name} · ${item.country}`}</small></span>
+            <span className="result-chevron" aria-hidden="true">›</span>
+          </button>)}
+        </div>
+        {!error && items.length > 0 && <p className="sheet-foot">{donationSearch ? 'Donate only on the organization’s official site.' : 'Confirm availability with the organization.'}</p>}
+      </aside>}
+
+      {selected && !needsOpen && <OpportunityDetail key={selected.id} item={selected} fit={fit}
+        mcpHandoff={mcpHandoffId === selected.id}
+        reasonCodes={reasonCodes} closeRef={detailCloseRef} onClose={() => setSelectedId(null)} onAccount={() => setAccountOpen(true)} />}
+
+      <div className="command-zone">
+        <form className="command-dock" onSubmit={handleSubmit}>
+          <span className="command-character" aria-hidden="true"><span className="command-eyes"><span className="command-eye" /><span className="command-eye" /></span></span>
+          <label className="sr-only" htmlFor="helios-search">Search by cause, place, or date</label>
+          <span className="search-field"><input id="helios-search" value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" />
+            {!query && <span className="search-example" key={exampleIndex} aria-hidden="true">{exampleQueries[exampleIndex]}</span>}</span>
+          <button type="submit" className="search-submit" disabled={busy || !query.trim()} aria-label="Search opportunities">↗</button>
+          <span className="dock-divider" aria-hidden="true" />
+          {voiceAvailable
+            ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} onUnavailable={() => setVoiceAvailable(false)} />
+            : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} startRequest={voiceStartRequest} />}
         </form>
-        <div className="search-tools">
-          <VoiceControl onSearch={acceptSearch} onFocus={setSelectedId} results={items} />
-          <button type="button" className="text-button" onClick={showAll} disabled={busy}>Show all</button>
-        </div>
-        <div className="catalog-status" role="status">
-          {busy ? 'Loading sourced records…' : error ? 'Catalog connection needs attention' : `${catalogCount} sourced records in this early catalog`}
-          {mode && !error && <span> · {mode === 'semantic' ? 'Semantic match' : 'Keyword match'}</span>}
-        </div>
-        {error && <div className="state-card error-card" role="alert"><strong>Search is unavailable</strong><p>{error}</p></div>}
-        {!busy && !error && items.length === 0 && <div className="state-card"><strong>{catalogCount === 0 ? 'The catalog is being connected' : 'No matching records'}</strong><p>{catalogCount === 0 ? 'The globe is ready. Sourced organizations and opportunities will appear here once published.' : 'Try another place or cause. Only verified catalog records are returned.'}</p></div>}
-        <div className="results" aria-label="Search results">
-          {items.map((item) => <article className={`result-card ${selectedId === item.id ? 'is-selected' : ''}`} key={item.id}>
-            <button type="button" className="result-focus" onClick={() => setSelectedId(item.id)} aria-label={`Fly to ${item.title}`}>
-              <span className="result-type">{item.record_kind}</span>
-              <strong>{item.title}</strong>
-              <span>{item.organization_name} · {item.country}</span>
-            </button>
-          </article>)}
-        </div>
-      </section>
-      <section className="map-panel" aria-label="Global map">
-        <Globe items={items} selectedId={selectedId} onSelect={setSelectedId} />
-        {selected && <div className="detail-card">
-          <button type="button" className="detail-close" onClick={() => setSelectedId(null)} aria-label="Close details">×</button>
-          <span className="result-type">{selected.record_kind}</span>
-          <h2>{selected.title}</h2>
-          <p>{selected.summary}</p>
-          <p className="meta">{selected.place_label} · {selected.pin_meaning === 'event_city' ? 'Event city' : 'Representative organization city'}</p>
-          {selected.schedule_text && <p className="meta">{selected.schedule_text}</p>}
-          <p className="meta">{checkedLabel(selected.source_checked_at)}</p>
-          <div className="detail-links">
-            <a href={selected.source_url} target="_blank" rel="noopener noreferrer">View source</a>
-            {selected.action_url && <a className="action-link" href={selected.action_url} target="_blank" rel="noopener noreferrer">Visit official page ↗</a>}
-          </div>
-        </div>}
-      </section>
+        <span className="command-hint">Sourced needs. Clear action state.</span>
+      </div>
+
+      {agentOpen && <AgentWorkbench selectedId={selectedId} onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
+      {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); setVoiceStartRequest((value) => value + 1); }} />}
+      {needsOpen && <NeedHub selectedId={needId} onSelect={setNeedId} onClose={() => setNeedsOpen(false)}
+        onAccount={() => setAccountOpen(true)} onVoice={() => setVoiceStartRequest((value) => value + 1)}
+        voiceAvailable={voiceAvailable} spokenOffer={spokenOffer} />}
+      {accountOpen && <AuthPanel onClose={() => setAccountOpen(false)} />}
     </main>
-    <footer className="site-footer">Global view. Limited catalog. An external page controls registration or admission.</footer>
   </div>;
 }
