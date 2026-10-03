@@ -35,7 +35,7 @@ export default function App() {
   const [catalogItems, setCatalogItems] = useState<HeliosItem[]>([]);
   const [alternatives, setAlternatives] = useState<NonNullable<SearchResponse['alternatives']>>([]);
   const [nextStep, setNextStep] = useState<string | null>(null);
-  const { focus: mapFocus, notice: mapNotice, focusQuery, focusWorld } = useMapFocus(catalogItems);
+  const { focus: mapFocus, notice: mapNotice, focusQuery, focusPlace, focusWorld } = useMapFocus(catalogItems);
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('item'));
   const [catalogCount, setCatalogCount] = useState(0);
   const [mode, setMode] = useState<SearchResponse['mode'] | null>(null);
@@ -201,7 +201,7 @@ export default function App() {
     }
   };
 
-  const acceptVoiceSearch = (response: SearchResponse, spokenQuery: string) => {
+  const acceptVoiceSearch = (response: SearchResponse, spokenQuery: string, place?: string) => {
     setNeedsOpen(false);
     setAgentOpen(false);
     setAccountOpen(false);
@@ -209,7 +209,8 @@ export default function App() {
     requestRef.current = null;
     setBusy(false);
     setQuery(spokenQuery);
-    focusQuery(spokenQuery);
+    if (place) void focusPlace(place);
+    else focusQuery(spokenQuery);
     acceptSearch(response);
   };
 
@@ -267,7 +268,7 @@ export default function App() {
             {!query && <span className="search-example" key={exampleIndex} aria-hidden="true">{exampleQueries[exampleIndex]}</span>}</span>
           <button type="submit" className="search-submit" disabled={busy || !query.trim()} aria-label="Search opportunities">↗</button>
           <span className="dock-divider" aria-hidden="true" />
-          <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={[...items, ...alternatives.map(({ item }) => item)]} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
+          <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onPlace={focusPlace} onNeed={focusNeed} results={[...items, ...alternatives.map(({ item }) => item)]} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
         </form>
         <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'connecting' ? 'Connecting HeliOS voice…' : voiceActivity === 'listening' ? 'Listening to you' : voiceActivity === 'speaking' ? 'Helios is speaking' : voiceActivity === 'hold-ready' ? 'Hold Option to speak · Tap the mic to stop' : voiceActivity === 'ready' ? 'Speak to HeliOS · Tap the mic to stop' : voiceAvailable ? 'Hold Option to talk · Tap the mic for conversation' : 'OpenAI voice unavailable in this preview')}</span>
       </div>

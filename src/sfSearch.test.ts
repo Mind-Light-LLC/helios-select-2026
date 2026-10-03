@@ -50,3 +50,9 @@ test('the same demo spans San Francisco and sourced organizations worldwide', ()
   assert.ok(searchCurated(demoCatalog, 'Show organizations around the world', 20)
     .some((item) => item.country === 'Nigeria'));
 });
+
+test('an unqualified volunteer search returns sourced volunteer paths', () => {
+  const results = searchCurated(demoCatalog, 'volunteer opportunities');
+  assert.ok(results.length > 0);
+  assert.ok(results.every((item) => item.record_kind === 'volunteer'));
+});

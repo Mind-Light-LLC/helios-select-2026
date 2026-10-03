@@ -7,6 +7,7 @@ const monthPattern = '(January|February|March|April|May|June|July|August|Septemb
 const ignored = new Set([
   'about', 'and', 'around', 'can', 'could', 'find', 'for', 'from', 'have', 'help', 'how',
   'like', 'looking', 'near', 'open', 'organization', 'organizations', 'please', 'pretty',
+  'opportunity', 'opportunities',
   'san', 'francisco', 'some', 'support', 'that', 'the', 'this', 'want', 'what', 'where',
   'which', 'with', 'would', 'volunteer', 'volunteering', 'donate', 'donation', 'dollars',
   'money', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
@@ -67,10 +68,12 @@ export function searchCurated(items: HeliosItem[], query: string, limit = 20, no
   const day = requestedDay(query);
   const amount = donationAmount(query);
   const donation = amount !== null || /\b(donat\w*|give|contribut\w*)\b/i.test(query);
+  const volunteering = /\b(?:volunteer(?:ing)?|opportunit(?:y|ies))\b/i.test(query);
   const local = /\b(san francisco|sf)\b/i.test(query);
   const worldwide = /\b(worldwide|global|anywhere)\b|around the world/i.test(query);
   const tag = causes.find((cause) => cause.test.test(query))?.tag;
-  let candidates = items.filter((item) => !local || item.place_label.toLowerCase().includes('san francisco'));
+  let candidates = items.filter((item) => (!local || item.place_label.toLowerCase().includes('san francisco'))
+    && (!volunteering || item.record_kind === 'volunteer'));
   if (day) candidates = candidates.filter((item) => isCurrentReview(item, now)
     && (item.weekly_days?.includes(day) || (item.starts_at
       && new Date(item.starts_at).getUTCDay() === days.indexOf(day))));
@@ -99,6 +102,6 @@ export function searchCurated(items: HeliosItem[], query: string, limit = 20, no
     });
     return spread.slice(0, limit).map(({ item }) => item);
   }
-  if (words.length === 0 || day || donation || local || tag) return ranked.slice(0, limit).map(({ item }) => item);
+  if (words.length === 0 || day || donation || local || tag || volunteering) return ranked.slice(0, limit).map(({ item }) => item);
   return ranked.filter(({ score }) => score > 0).slice(0, limit).map(({ item }) => item);
 }

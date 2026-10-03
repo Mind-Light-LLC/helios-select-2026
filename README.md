@@ -26,7 +26,7 @@ The globe uses [NASA GIBS Blue Marble imagery](docs/visual-sources.md). Organiza
 3. Ask **"I have ten dollars"** or **"What does this organization do?"** HeliOS narrows the catalog and explains what is known. A donation happens on the organization's own site.
 4. Open **Explore needs** to inspect a sourced public signal, or **Connect an agent** to see the same published records through MCP. Save a path in **My actions** if you want to return to it.
 
-The catalog currently combines 29 sourced global paths with 18 manually reviewed San Francisco paths across 15 organizations. Nine global records are published in the isolated HeliOS Supabase project; newer global paths remain labeled `curated_demo` pending publication review. Six San Francisco organizations have reviewed official donation paths. Empty search results mean this limited catalog has no match, not that the world has no opportunity.
+The catalog currently combines 29 sourced global paths with 18 manually reviewed San Francisco paths across 15 organizations. Nine global records are published in the isolated HeliOS Supabase project; newer global paths remain labeled `curated_demo` pending publication review. Six San Francisco organizations have reviewed official donation paths. Voice and text searches use the same `/api/search` route. When Realtime supplies a named place, the client preserves it in the search and focuses the globe there; broad volunteer searches return volunteer records without inventing an opening. Empty search results mean this limited catalog has no match, not that the world has no opportunity.
 
 ## The point of the product
 
