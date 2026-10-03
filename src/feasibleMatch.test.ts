@@ -12,7 +12,7 @@ test('an unsupported named place never falls back to another city', () => {
 
   const city = feasibleItems(demoCatalog, demoCatalog, 'volunteer in Oakland', reviewed);
   assert.deepEqual(city.items, []);
-  assert.equal(city.reason, 'location_unknown');
+  assert.equal(city.reason, 'location_mismatch');
 });
 
 test('near me abstains without an established user location', () => {
@@ -26,6 +26,16 @@ test('place and weekday facts constrain every ranking path', () => {
   assert.ok(match.items.length > 0);
   assert.ok(match.items.every((item) => item.place_label.startsWith('San Francisco')
     && item.weekly_days?.includes('Saturday')));
+});
+
+test('Friday San Francisco paths have sourced recurring schedules, not confirmed openings', () => {
+  const match = feasibleItems(demoCatalog, demoCatalog, 'Friday volunteering in San Francisco', reviewed);
+  const ids = match.items.map((item) => item.id);
+  assert.ok(ids.includes('project-open-hand-grocery-sf'));
+  assert.ok(ids.includes('sfm-food-bank-home-delivery'));
+  assert.ok(ids.includes('st-anthony-clothing-sf'));
+  assert.ok(!ids.includes('habitat-greater-sf'));
+  assert.ok(match.items.every((item) => item.availability_status === 'not_confirmed'));
 });
 
 test('city and country constraints both apply, while worldwide remains broad', () => {

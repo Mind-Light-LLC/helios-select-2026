@@ -26,7 +26,7 @@ const countryNames = (() => {
   return [...names];
 })();
 
-function byPlace(items: HeliosItem[], catalog: HeliosItem[], query: string): FeasibleSet {
+export function placeCandidates(items: HeliosItem[], catalog: HeliosItem[], query: string): FeasibleSet {
   const text = normalized(query);
   const cities = [...new Set(catalog.map((item) => item.place_label.split(',')[0]))];
   const country = countryNames.filter((name) => mentions(text, name));
@@ -46,13 +46,13 @@ function byPlace(items: HeliosItem[], catalog: HeliosItem[], query: string): Fea
   const namedPlace = /\b(?:in|near|around)\s+(?:the\s+)?([\p{L}][\p{L}\s-]{2,35})/iu.exec(query)?.[1]
     ?.split(/\b(?:on|at|for|by|with|this|next|today|tomorrow)\b/i)[0]?.trim();
   if (namedPlace && !/^(?:need|person|public|general|advance|time)$/i.test(namedPlace)) {
-    return { items: [], reason: 'location_unknown' };
+    return { items: [], reason: 'location_mismatch' };
   }
   return { items, reason: null };
 }
 
 export function feasibleItems(items: HeliosItem[], catalog: HeliosItem[], query: string, now = Date.now()): FeasibleSet {
-  const place = byPlace(items, catalog, query);
+  const place = placeCandidates(items, catalog, query);
   if (!place.items.length) return place;
   let candidates = place.items;
   const requestedDate = requestedCalendarDate(query, now);

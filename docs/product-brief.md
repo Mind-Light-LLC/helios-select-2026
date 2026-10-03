@@ -15,7 +15,7 @@ Helios gives the agent a small published catalog of sourced public-benefit oppor
 5. Open My actions to return to a saved path or create a Supabase email/password account. Discovery does not require an account. When the paid-AI gate is enabled, OpenAI Realtime can search, focus a record, list sourced needs, check an offer, and show a need card. Text search remains available when voice is disabled.
 6. Open Needs. Inspect the sourced Food Bank Singapore signal or create a private need-card draft for organization review. Save an action and return to it from My actions. The trail never marks a click as participation or impact.
 
-The local demo includes nine global catalog paths and 15 manually reviewed San Francisco organizations. When Supabase is configured, the server combines its published records with the SF catalog. Coverage is intentionally limited and no record confirms current shift capacity. A published recurring day is a lead to verify, not a dated event listing.
+The local demo includes 23 global catalog paths and 18 manually reviewed San Francisco paths across 15 organizations. When Supabase is configured, the server combines its published records with the curated catalog. Coverage is intentionally limited and no record confirms current shift capacity. A published recurring day is a lead to verify, not a dated event listing.
 
 ## Agent contract
 
@@ -23,6 +23,7 @@ The local demo includes nine global catalog paths and 15 manually reviewed San F
 - `GET /api/agent`: machine-readable endpoint inventory and authority boundary.
 - `GET /api/catalog`: published records for the globe.
 - `POST /api/search` with `{ "query": "...", "country": "Singapore" }`: search results plus the actual search mode and catalog scope.
+- `GET /api/geocode?name=Rwanda`: private-demo place lookup for rotating the globe when no catalog record exists in the requested area.
 - `GET /api/needs`: published partner cards and reviewed public signals with their source checks and review dates.
 - `list_sourced_needs`, `get_sourced_need`, and `check_offer` over MCP: discover and read the same need, then assess a proposed offer without claiming provider acceptance.
 
@@ -54,13 +55,13 @@ Supabase Compute is private alpha and is outside this demo's critical path. Bedr
 ## Evidence and limits
 
 - Prior Supabase migration and readback: nine published records, nine sourced records, one RLS policy, pgvector installed, search function installed. This is historical proof for the earlier catalog.
-- Current TypeScript and Vite build: passed locally; 17 focused feasibility, catalog, and need-assessment tests passed.
+- Current TypeScript and Vite build: passed locally; 30 focused feasibility, search-fallback, place-lookup, voice-key, catalog, need-assessment, and solar-shading tests passed.
 - Current local rendered path: the Needs sheet opened the reviewed public signal; the draft form rendered before sign-in; a saved need appeared in My actions and its return link reopened the same need. `food bank near me` showed location unknown with zero results; `help children learn in Kenya` returned no out-of-place catalog result.
-- Current rendered local path: 24 sourced records across nine country labels, including 15 San Francisco records. A Sunday food request returned two SF programs; a $10 gift request returned six official donation paths, with a verified minimum only for Project Open Hand.
-- Proactive browser demo: clicking Talk to Helios showed the greeting, and a typed Sunday reply returned two source-backed records. Browser speech recognition and audio output remain browser-dependent.
+- Earlier rendered local path: 24 sourced records across nine country labels, including 15 San Francisco records. A Sunday food request returned two SF programs; a $10 gift request returned six official donation paths, with a verified minimum only for Project Open Hand. The current catalog has 41 paths.
+- Earlier browser-speech demo: clicking Talk to Helios showed the greeting, and a typed Sunday reply returned two source-backed records. That fallback has since been removed.
 - Full local API: `/api/catalog` returned 24 records; `/api/search` returned global, Sunday, and $10 results; `/api/auth-config` reported the existing Supabase connection; `/api/voice-token` returned a short-lived token. Supabase Auth settings reported email signup enabled and email confirmation required. The Account panel enabled signup. A new external user was not created during verification.
-- Prior protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions. The new San Francisco catalog has not yet been deployed or read back there.
-- Local rendered desktop and phone paths: Lagos search produced one result, globe focus and official action; an unmatched query showed a clear empty state and zero markers.
+- Earlier protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions. A later protected demo preview of the pre-integration snapshot returned 41 catalog records and five Friday San Francisco paths, but this review branch has not had a rendered browser or microphone test.
+- Earlier local desktop and phone render: Lagos search produced one result, globe focus and official action. The current keep-all-pins behavior remains visually unverified in a browser.
 - Semantic retrieval: unverified until the Gemini key is configured and document embeddings are stored.
 - OpenAI Realtime speech: token issuance worked in an earlier gated test, but the in-app browser did not complete microphone capture. The current interface uses a dock glow and no voice popup or browser-speech fallback. A spoken end-to-end Realtime search remains unverified.
 - Supabase signup: UI and configuration are wired; an actual signup and email confirmation remain unverified until a test identity completes the provider flow.

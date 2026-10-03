@@ -7,7 +7,8 @@ import { feasibleItems } from '../src/feasibleMatch.js';
 import { sfCatalog } from '../src/sfCatalog.js';
 import { globalCatalog } from '../src/globalCatalog.js';
 import { demoCatalog } from '../src/demoCatalog.js';
-import { hasStructuredIntent, searchCurated } from '../src/sfSearch.js';
+import { hasStructuredIntent, requestedDay, searchCurated } from '../src/sfSearch.js';
+import { searchAlternatives } from '../src/searchAlternatives.js';
 
 const columns = 'id,record_kind,title,summary,organization_name,country,place_label,pin_meaning,schedule_text,latitude,longitude,source_url,action_url,action_kind,action_label,action_note,availability_status,starts_at,source_checked_at,review_due_at';
 
@@ -147,6 +148,12 @@ function searchIds(value: unknown): string[] {
 
 export async function searchItems(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
   const catalog = await listCatalog();
+  const finalize = (result: SearchResponse): SearchResponse => {
+    if (result.items.length) return result;
+    const reason = result.reason_codes?.[0] ?? 'no_relevant_record';
+    return { ...result, fit: 'no_match', reason_codes: result.reason_codes ?? [reason],
+      ...searchAlternatives(catalog, query, reason, options) };
+  };
   const limit = Math.min(Math.max(options.limit ?? 20, 1), 20);
   const feasible = feasibleItems(applyFilters(catalog, options), catalog, query);
   const eligible = feasible.items;
@@ -155,23 +162,23 @@ export async function searchItems(query: string, options: SearchOptions = {}): P
     coverage: 'curated_sample' as const,
     applied_filters: { country: options.country ?? null, record_kind: options.record_kind ?? null },
   };
-  if (eligible.length === 0) return { ...responseBase, items: [], mode: 'keyword', fit: 'no_match',
-    reason_codes: [feasible.reason ?? 'no_relevant_record'] };
+  if (eligible.length === 0) return finalize({ ...responseBase, items: [], mode: 'keyword', fit: 'no_match',
+    reason_codes: [feasible.reason ?? 'no_relevant_record'] });
   if (hasStructuredIntent(query)) {
     const items = searchCurated(eligible, query, limit);
-    return { ...responseBase, items, mode: 'keyword', fit: items.length ? 'record_match' : 'no_match',
-      reason_codes: items.length ? ['availability_unconfirmed'] : ['no_relevant_record'] };
+    return finalize({ ...responseBase, items, mode: 'keyword', fit: items.length ? 'record_match' : 'no_match',
+      reason_codes: items.length ? ['availability_unconfirmed'] : [requestedDay(query) ? 'schedule_unverified' : 'no_relevant_record'] });
   }
   if (paidAiEnabled() && process.env.HELIOS_BEDROCK_MODEL_ID) {
     try {
       const match = await classifyCandidates(query, eligible);
-      if (match) return {
+      if (match) return finalize({
         ...responseBase,
         items: match.item ? [match.item] : [],
         mode: 'bedrock',
         fit: match.fit,
         reason_codes: match.reason_codes,
-      };
+      });
     } catch (cause) {
       console.warn('Bedrock classification unavailable:', cause instanceof Error ? cause.name : 'unknown error');
     }
@@ -186,10 +193,10 @@ export async function searchItems(query: string, options: SearchOptions = {}): P
       }));
       const byId = new Map(eligible.map((item) => [item.id, item]));
       const matches = ids.map((id) => byId.get(id)).filter((item): item is HeliosItem => Boolean(item));
-      if (matches.length > 0) return { ...responseBase, items: matches.slice(0, limit), mode: 'semantic' };
+      if (matches.length > 0) return finalize({ ...responseBase, items: matches.slice(0, limit), mode: 'semantic' });
     } catch {
-      return { ...responseBase, items: keywordSearch(eligible, query, limit), mode: 'keyword' };
+      return finalize({ ...responseBase, items: keywordSearch(eligible, query, limit), mode: 'keyword' });
     }
   }
-  return { ...responseBase, items: keywordSearch(eligible, query, limit), mode: 'keyword' };
+  return finalize({ ...responseBase, items: keywordSearch(eligible, query, limit), mode: 'keyword' });
 }

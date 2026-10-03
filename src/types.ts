@@ -37,6 +37,8 @@ export type HeliosItem = {
 
 export type SearchResponse = {
   items: HeliosItem[];
+  alternatives?: Array<{ item: HeliosItem; explanation: string }>;
+  next_step?: string;
   mode: 'semantic' | 'keyword' | 'bedrock';
   fit?: MatchFit;
   reason_codes?: MatchReason[];
