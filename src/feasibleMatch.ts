@@ -1,5 +1,5 @@
-import { isCurrentReview, requestedCalendarDate, requestedDay } from './sfSearch';
-import type { HeliosItem, MatchReason } from './types';
+import { isCurrentReview, requestedCalendarDate, requestedDay } from './sfSearch.js';
+import type { HeliosItem, MatchReason } from './types.js';
 
 type FeasibleSet = { items: HeliosItem[]; reason: MatchReason | null };
 

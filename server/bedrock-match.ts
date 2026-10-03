@@ -1,6 +1,6 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import * as z from 'zod/v4';
-import type { HeliosItem, MatchFit, MatchReason } from '../src/types';
+import type { HeliosItem, MatchFit, MatchReason } from '../src/types.js';
 
 const reasons = [
   'cause_fit', 'location_fit', 'remote_fit', 'schedule_mismatch',

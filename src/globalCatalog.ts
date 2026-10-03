@@ -1,4 +1,4 @@
-import type { HeliosItem } from './types';
+import type { HeliosItem } from './types.js';
 
 type GlobalRecord = Pick<HeliosItem, 'id' | 'record_kind' | 'title' | 'summary'
   | 'organization_name' | 'country' | 'place_label' | 'pin_meaning' | 'schedule_text'
