@@ -60,7 +60,10 @@ export async function POST(request: Request): Promise<Response> {
         expires_after: { anchor: 'created_at', seconds: 60 },
         session: {
           type: 'realtime', model: 'gpt-realtime-2.1',
-          audio: { output: { voice: 'marin' } },
+          audio: {
+            input: { turn_detection: { type: 'semantic_vad', eagerness: 'low', create_response: true, interrupt_response: true } },
+            output: { voice: 'marin' },
+          },
           instructions: voiceInstructions,
           tools: voiceTools,
           tool_choice: 'auto',

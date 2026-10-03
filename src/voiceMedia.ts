@@ -5,7 +5,7 @@ export async function requestMicrophone(generation: number, currentGeneration: (
       settled = true;
       reject(new Error('Microphone access timed out. You can continue by typing.'));
     }, 8000);
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then((stream) => {
       window.clearTimeout(timer);
       if (settled || generation !== currentGeneration()) {
         stream.getTracks().forEach((track) => track.stop());
