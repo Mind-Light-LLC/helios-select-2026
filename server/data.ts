@@ -69,7 +69,8 @@ export async function catalogFetch(path: string, init?: RequestInit): Promise<un
 export async function listCatalog(): Promise<HeliosItem[]> {
   if (!process.env.SUPABASE_URL && !process.env.SUPABASE_PUBLISHABLE_KEY) return demoCatalog;
   const params = new URLSearchParams({ select: columns, published: 'eq.true', order: 'title.asc', limit: '500' });
-  const remote = readItems(await catalogFetch(`helios_items?${params}`));
+  const remote = readItems(await catalogFetch(`helios_items?${params}`))
+    .map((item) => ({ ...item, publication_state: 'published' as const }));
   const byId = new Map([...sfCatalog, ...globalCatalog, ...remote].map((item) => [item.id, item]));
   return [...byId.values()].sort((a, b) => a.title.localeCompare(b.title));
 }

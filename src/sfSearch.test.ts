@@ -41,9 +41,9 @@ test('a natural-language event date is a constraint, not a semantic hint', () =>
 });
 
 test('the same demo spans San Francisco and sourced organizations worldwide', () => {
-  assert.equal(demoCatalog.length, 30);
+  assert.equal(demoCatalog.length, 38);
   assert.equal(demoCatalog.filter((item) => item.place_label === 'San Francisco, California').length, 15);
-  assert.equal(new Set(demoCatalog.map((item) => item.country)).size, 13);
+  assert.equal(new Set(demoCatalog.map((item) => item.country)).size, 21);
   assert.ok(demoCatalog.every((item) => item.source_url.startsWith('https://')
     && item.action_url?.startsWith('https://') && item.action_authority === 'provider'
     && item.availability_status === 'not_confirmed'));
