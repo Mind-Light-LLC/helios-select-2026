@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "repo:status": "tsx scripts/repo-status.ts",
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && npm run typecheck:server && vite build",
