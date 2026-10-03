@@ -35,7 +35,7 @@ function matchDetail(mode: SearchResponse['mode'] | null, fit: SearchResponse['f
   if (reasons.includes('location_mismatch')) return 'Place differs from your request';
   if (reasons.includes('date_mismatch') || reasons.includes('schedule_mismatch')) return 'Timing differs from your request';
   if (fit === 'related_path') return 'Related path. Check the details.';
-  if (reasons.includes('availability_unconfirmed')) return 'Published path. Confirm an open spot with the organization.';
+  if (reasons.includes('availability_unconfirmed')) return 'Sourced path. Confirm an open spot with the organization.';
   if (mode === 'keyword') return 'Text match. Check place and timing.';
   return 'Sourced path to explore';
 }
