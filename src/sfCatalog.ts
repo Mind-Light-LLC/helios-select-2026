@@ -50,9 +50,9 @@ export const sfCatalog: HeliosItem[] = [
     latitude: 37.784, longitude: -122.420, cause_tags: ['food', 'health', 'seniors'], weekly_days: daily,
     schedule_text: 'Published kitchen shift: 9 am to noon, Monday through Sunday; check current openings.',
     source_url: 'https://www.openhand.org/volunteer/individual-volunteer/volunteer-our-kitchen',
-    action_url: 'https://www.openhand.org/volunteer/individual-volunteer/volunteer-our-kitchen',
-    action_kind: 'official_page', action_label: 'Explore kitchen shifts',
-    action_note: 'The organization offers weekly inquiry and Hot Spot paths. No particular shift is confirmed here.',
+    action_url: 'https://www.openhand.org/hotspots',
+    action_kind: 'registration_page', action_label: 'Check Hot Spot shifts',
+    action_note: 'Review the age and food safety guidelines, then check dated openings. Opening the page is not registration.',
     donation_url: 'https://www.openhand.org/donate', donation_minimum_usd: 10,
   }),
   item({
