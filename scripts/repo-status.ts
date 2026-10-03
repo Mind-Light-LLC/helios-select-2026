@@ -34,14 +34,16 @@ try {
   if (fetch.status !== 0) console.error(`Fetch failed; origin/main may be stale: ${fetch.stderr}`);
   const main = git(['rev-parse', '--short', 'origin/main'], repo);
   const trees = worktrees(repo);
+  const showPaths = process.argv.includes('--paths');
   console.log(`origin/main ${main} | ${trees.length} worktrees`);
   console.log('Dirty counts are local files; ahead/behind and containment describe committed HEAD only.');
   for (const tree of trees) {
-    const dirty = git(['status', '--porcelain=v1', '-uall'], tree.path).split('\n').filter(Boolean).length;
+    const dirtyPaths = git(['status', '--porcelain=v1', '-uall'], tree.path).split('\n').filter(Boolean);
     const ahead = git(['rev-list', '--count', 'origin/main..HEAD'], tree.path);
     const behind = git(['rev-list', '--count', 'HEAD..origin/main'], tree.path);
     const included = run('git', ['merge-base', '--is-ancestor', 'HEAD', 'origin/main'], tree.path).status === 0;
-    console.log(`${dirty} dirty | ${ahead} ahead | ${behind} behind | ${included ? 'HEAD in main' : 'HEAD pending'} | ${tree.branch} | ${tree.path}`);
+    console.log(`${dirtyPaths.length} dirty | ${ahead} ahead | ${behind} behind | ${included ? 'HEAD in main' : 'HEAD pending'} | ${tree.branch} | ${tree.path}`);
+    if (showPaths) for (const path of dirtyPaths) console.log(`  ${path}`);
   }
   const prs = run('gh', [
     'pr', 'list', '--state', 'open', '--limit', '30',

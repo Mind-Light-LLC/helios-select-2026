@@ -15,4 +15,4 @@
 - Commit and push intended changes in a reviewable PR. State the base ref, dependency PRs, owned paths, checks, and rendered evidence. A local edit or preview is not an integrated change.
 - Before integration, compare the PR against current `origin/main` for accidental reversions and verify the combined behavior where PRs overlap. Never copy an older file wholesale over newer work.
 - Do not reset, clean, pull over, or remove a dirty worktree. Preserve and reconcile its work first. Remove a clean worktree only after its commits are contained in the integration branch or deliberately archived.
-- Run `npm run repo:status` before starting or integrating parallel work; it refreshes `origin/main` and shows each worktree's dirty paths, branch distance, containment, and open PRs.
+- Run `npm run repo:status` before starting or integrating parallel work; it refreshes `origin/main` and shows worktree status and open PRs. Use `npm run repo:status -- --paths` for the changed-path inventory.
