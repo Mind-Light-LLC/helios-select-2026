@@ -25,7 +25,7 @@ export function shadeOpacity(latitude: number, longitude: number, now: Date): nu
   const lat = latitude * radians;
   const cosine = Math.sin(lat) * Math.sin(sun.declination)
     + Math.cos(lat) * Math.cos(sun.declination) * Math.cos((longitude - sun.longitude) * radians);
-  return opacityFromCosine(-cosine);
+  return opacityFromCosine(cosine);
 }
 
 function latitudeAt(y: number, scale: number): number {
@@ -61,7 +61,7 @@ export async function shadeTile(url: string): Promise<ImageBitmap> {
       image.data[index] = 10;
       image.data[index + 1] = 31;
       image.data[index + 2] = 45;
-      image.data[index + 3] = Math.round(opacityFromCosine(-cosine) * 116);
+      image.data[index + 3] = Math.round(opacityFromCosine(cosine) * 165);
     }
   }
   context.putImageData(image, 0, 0);
