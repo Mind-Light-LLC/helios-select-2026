@@ -82,7 +82,6 @@ export function AuthPanel({ onClose }: Props) {
       <CloudSavedActions />
     </> : <>
       <h2>{mode === 'join' ? 'Join Helios.' : 'Welcome back.'}</h2>
-      <p className="auth-description">Find sourced ways to help, wherever you are. You can explore without an account.</p>
       <form onSubmit={(event) => void submit(event)}>
         <label htmlFor="auth-email">Email</label>
         <input id="auth-email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />

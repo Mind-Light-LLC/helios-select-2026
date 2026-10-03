@@ -1,3 +1,5 @@
+import { paidAiEnabled } from '../server/paid-ai.js';
+
 export const voiceTools = [
   {
     type: 'function', name: 'search_catalog',
@@ -39,6 +41,7 @@ const voiceInstructions = [
 ].join(' ');
 
 export async function POST(request: Request): Promise<Response> {
+  if (!paidAiEnabled()) return Response.json({ error: 'Realtime voice is not enabled for this deployment.' }, { status: 503 });
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) {
     return Response.json({ error: 'Origin not allowed.' }, { status: 403 });

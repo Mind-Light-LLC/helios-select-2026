@@ -27,10 +27,30 @@
 }
 .globe-frame::after {
   z-index: 2;
-  background: linear-gradient(90deg, #020a166b 0%, transparent 40%, transparent 72%, #020a161e 100%),
-    linear-gradient(180deg, #020a1665 0%, transparent 23%, transparent 76%, #020a1670 100%);
+  background: linear-gradient(90deg, #020a1638 0%, transparent 40%, transparent 72%, #020a1615 100%),
+    linear-gradient(180deg, #020a162b 0%, transparent 23%, transparent 76%, #020a1638 100%);
 }
-.globe-canvas canvas { filter: brightness(1.56) saturate(1.16) contrast(.9); }
+.globe-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: var(--globe-halo-size, 0px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle,
+    transparent calc(var(--globe-radius) - 3px),
+    #a6dfff24 var(--globe-radius),
+    #4a9cc52b calc(var(--globe-radius) + 10px),
+    #1f649d15 calc(var(--globe-radius) + 26px),
+    transparent calc(var(--globe-radius) + 40px));
+  -webkit-mask-image: conic-gradient(from 180deg, transparent, #0003 70deg, #000 125deg, #000d 225deg, #0002 305deg, transparent);
+  mask-image: conic-gradient(from 180deg, transparent, #0003 70deg, #000 125deg, #000d 225deg, #0002 305deg, transparent);
+}
+.globe-frame[data-halo-ready='true'] .globe-halo { opacity: 1; }
+.globe-canvas canvas { filter: none; }
 .imagery-credit { background: #020a16aa; }
 .command-zone { left: 50%; bottom: 29px; width: min(675px, calc(100vw - 60px)); transform: translateX(-50%); }
 .command-dock { background: linear-gradient(110deg, #f8faf2f2, #e4f1f0e9); box-shadow: inset 0 1px 1px #fff, 0 24px 75px #010713c9, 0 0 0 1px #fff7; }
