@@ -30,31 +30,36 @@ async function rpc(endpoint: string, method: string, params: ObjectValue): Promi
   return parseResponse(await response.text());
 }
 
-async function connect(endpoint: string, name: string): Promise<void> {
-  await rpc(endpoint, 'initialize', {
-    protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name, version: '0.1.0' },
-  });
-  const listed = await rpc(endpoint, 'tools/list', {});
-  const tools = listed.tools;
-  if (!Array.isArray(tools) || !tools.some((entry) => object(entry, 'MCP tool').name === 'search_opportunities')
-    || !tools.some((entry) => object(entry, 'MCP tool').name === 'get_opportunity')) {
-    throw new Error(`${name} did not receive the required tools.`);
-  }
-}
+class DemoClient {
+  constructor(private readonly endpoint: string, private readonly name: string) {}
 
-async function callTool(endpoint: string, name: string, args: ObjectValue): Promise<ObjectValue> {
-  const response = await rpc(endpoint, 'tools/call', { name, arguments: args });
-  if (response.isError === true) throw new Error(`${name} returned an MCP tool error.`);
-  return object(response.structuredContent, `${name} structured result`);
+  async connect(): Promise<void> {
+    await rpc(this.endpoint, 'initialize', {
+      protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: this.name, version: '0.1.0' },
+    });
+    const listed = await rpc(this.endpoint, 'tools/list', {});
+    const tools = listed.tools;
+    if (!Array.isArray(tools) || !tools.some((entry) => object(entry, 'MCP tool').name === 'search_opportunities')
+      || !tools.some((entry) => object(entry, 'MCP tool').name === 'get_opportunity')) {
+      throw new Error(`${this.name} did not receive the required tools.`);
+    }
+  }
+
+  async callTool(name: string, args: ObjectValue): Promise<ObjectValue> {
+    const response = await rpc(this.endpoint, 'tools/call', { name, arguments: args });
+    if (response.isError === true) throw new Error(`${name} returned an MCP tool error.`);
+    return object(response.structuredContent, `${name} structured result`);
+  }
 }
 
 async function main(): Promise<void> {
   const base = new URL(process.argv[2] ?? 'http://127.0.0.1:3000');
   const endpoint = new URL('/api/mcp', base).href;
-  await connect(endpoint, 'helios-discovery-client');
-  await connect(endpoint, 'helios-evidence-client');
+  const discovery = new DemoClient(endpoint, 'helios-discovery-client');
+  const evidence = new DemoClient(endpoint, 'helios-evidence-client');
+  await Promise.all([discovery.connect(), evidence.connect()]);
 
-  const rejected = await callTool(endpoint, 'search_opportunities', {
+  const rejected = await discovery.callTool('search_opportunities', {
     query: 'Lakewood Red Cross October 18', limit: 5,
   });
   if (rejected.match_count !== 0 || !Array.isArray(rejected.reason_codes)
@@ -62,7 +67,7 @@ async function main(): Promise<void> {
     throw new Error('The discovery client did not reject October 18.');
   }
 
-  const matched = await callTool(endpoint, 'search_opportunities', {
+  const matched = await discovery.callTool('search_opportunities', {
     query: 'Lakewood Red Cross October 17', limit: 5,
   });
   if (!Array.isArray(matched.records)) throw new Error('Search returned no record list.');
@@ -71,7 +76,7 @@ async function main(): Promise<void> {
   if (!found) throw new Error('The October 17 search did not return the Lakewood record.');
   const id = text(found.id, 'Record ID');
 
-  const detailed = await callTool(endpoint, 'get_opportunity', { id });
+  const detailed = await evidence.callTool('get_opportunity', { id });
   const record = object(detailed.record, 'Evidence record');
   const source = object(record.source, 'Source');
   const map = object(record.map, 'Map place');
