@@ -8,22 +8,25 @@ Helios gives the agent a small published catalog of sourced public-benefit oppor
 
 ## Hackathon demonstration
 
-1. Ask: "Find food relief volunteering in Lagos."
-2. Helios returns an official-source record with the checked date, map pin meaning, and a `visit_official_page` next action.
-3. Select the record. The globe flies to Lagos and shows the official page.
-4. Ask the voice agent to find another opportunity and fly to it, if OpenAI Realtime is configured.
-5. Call the same `search_opportunities` tool over MCP from an agent client.
+1. Click Talk to Helios or the microphone. Helios asks how you want to help. Say "My Sunday is open. Where can I help with food in San Francisco?" If you say "near me" without a place, Helios asks for your city or country.
+2. Helios shows Project Open Hand and St. Anthony Foundation: their official pages publish Sunday meal shifts. Neither record claims an open slot. Meals on Wheels SF is excluded because its FAQ says it has no weekend volunteer program.
+3. Ask: "I have $10 to give." Project Open Hand appears first because its official form publishes a $10 minimum. Other donation paths are shown with their amount unverified.
+4. Open the chosen organization’s official volunteer or donation page. Helios does not submit registration or payment. Call `search_opportunities` over MCP to get the same source, recurring days, action authority, and shareable globe link.
+5. Open My actions to return to a saved path or create a Supabase email/password account. Discovery does not require an account. OpenAI Realtime can search, focus a record, list sourced needs, check an offer, and show a need card. The local Vite fallback uses browser speech and typed replies for guided catalog search.
+6. Open Needs. Inspect the sourced Food Bank Singapore signal or create a private need-card draft for organization review. Save an action and return to it from My actions. The trail never marks a click as participation or impact.
 
-The public demo catalog contains nine manually reviewed records across eight countries and one global online program. It is intentionally small. It is not a worldwide index and does not confirm that any role still has open capacity. Each record links to the organization so a person can verify availability.
+The local demo includes nine global catalog paths and 15 manually reviewed San Francisco organizations. When Supabase is configured, the server combines its published records with the SF catalog. Coverage is intentionally limited and no record confirms current shift capacity. A published recurring day is a lead to verify, not a dated event listing.
 
 ## Agent contract
 
-- `POST /api/mcp`: read-only MCP tools `search_opportunities` and `get_opportunity`.
+- `POST /api/mcp`: read-only MCP tools `describe_catalog`, `search_opportunities`, `get_opportunity`, `list_sourced_needs`, `get_sourced_need`, and `check_offer`.
 - `GET /api/agent`: machine-readable endpoint inventory and authority boundary.
 - `GET /api/catalog`: published records for the globe.
-- `POST /api/search` with `{ "query": "..." }`: search results plus the actual search mode.
+- `POST /api/search` with `{ "query": "...", "country": "Singapore" }`: search results plus the actual search mode and catalog scope.
+- `GET /api/needs`: published partner cards and reviewed public signals with their source checks and review dates.
+- `list_sourced_needs`, `get_sourced_need`, and `check_offer` over MCP: discover and read the same need, then assess a proposed offer without claiming provider acceptance.
 
-Every agent record includes an official source URL and check time, map coordinates with pin meaning, schedule text when available, and a next-action state. `not_started` means Helios has not performed an external action. `provider_confirmation` means a provider receipt is needed before claiming completion.
+Every agent record includes an official source URL and check time, map coordinates with pin meaning, a shareable globe `view_url`, schedule text when available, explicit availability status, and a typed next action with a provider-specific note. `not_started` means Helios has not performed an external action. `provider_confirmation` means a provider receipt is needed before claiming completion. `describe_catalog` reports the limited country coverage so agents can distinguish an empty catalog match from no opportunity existing.
 
 ## System
 
@@ -34,23 +37,35 @@ flowchart LR
     Globe --> API[Vercel API]
     MCP --> API
     API --> DB[(Supabase published catalog)]
+    API --> SF[Reviewed SF demo catalog]
+    API --> Global[Reviewed global demo records]
     API --> Gemini[Gemini Embedding 2]
     Globe --> Realtime[OpenAI Realtime]
+    Person --> Auth[Supabase email and password Auth]
     DB --> Source[Official organization page]
 ```
 
-Supabase holds records with RLS and pgvector. Gemini generates 768-dimensional retrieval embeddings when its server key is configured and the catalog rows have been embedded. The API reports `keyword` until semantic retrieval actually runs. OpenAI Realtime only receives short-lived client secrets; its tools call the same search API and focus a returned ID. The MapLibre globe uses public demo tiles in this build.
+Supabase holds records with RLS and pgvector. Gemini generates 768-dimensional retrieval embeddings when its server key is configured and the catalog rows have been embedded. The API reports `keyword` until semantic retrieval actually runs. OpenAI Realtime only receives short-lived client secrets; its tools call the same search API and focus a returned ID. The MapLibre globe uses NASA GIBS Blue Marble imagery from August 2004, with attribution in the map.
 
-Supabase Compute is private alpha and is outside this demo's critical path. Bedrock agent loops and Stripe payments are not connected. There is no honest payment step in finding a volunteer role; adding a checkout only to satisfy a sponsor category would confuse the user's job. If a future organization authorizes a paid event or donation flow, the provider receipt must be modeled and read back before Helios claims admission or payment.
+Supabase Compute is private alpha and is outside this demo's critical path. Bedrock agent loops and Stripe payments are not connected. There is no honest payment step in finding a volunteer role; adding a checkout only to satisfy a sponsor category would confuse the user's job. A separate, organization-owned [Stripe donation flow](STRIPE_DONATION_FLOW.md) is specified, but no recipient link or checkout is verified. A provider receipt and readback are required before Helios claims payment.
 
 ## Evidence and limits
 
-- Live Supabase migration and readback: nine published records, nine sourced records, one RLS policy, pgvector installed, search function installed.
-- TypeScript and Vite build: passed locally.
-- Protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions.
+- Prior Supabase migration and readback: nine published records, nine sourced records, one RLS policy, pgvector installed, search function installed. This is historical proof for the earlier catalog.
+- Current TypeScript and Vite build: passed locally; 17 focused feasibility, catalog, and need-assessment tests passed.
+- Current local rendered path: the Needs sheet opened the reviewed public signal; the draft form rendered before sign-in; a saved need appeared in My actions and its return link reopened the same need. `food bank near me` showed location unknown with zero results; `help children learn in Kenya` returned no out-of-place catalog result.
+- Current rendered local path: 24 sourced records across nine country labels, including 15 San Francisco records. A Sunday food request returned two SF programs; a $10 gift request returned six official donation paths, with a verified minimum only for Project Open Hand.
+- Proactive browser demo: clicking Talk to Helios showed the greeting, and a typed Sunday reply returned two source-backed records. Browser speech recognition and audio output remain browser-dependent.
+- Full local API: `/api/catalog` returned 24 records; `/api/search` returned global, Sunday, and $10 results; `/api/auth-config` reported the existing Supabase connection; `/api/voice-token` returned a short-lived token. Supabase Auth settings reported email signup enabled and email confirmation required. The Account panel enabled signup. A new external user was not created during verification.
+- Prior protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions. The new San Francisco catalog has not yet been deployed or read back there.
 - Local rendered desktop and phone paths: Lagos search produced one result, globe focus and official action; an unmatched query showed a clear empty state and zero markers.
 - Semantic retrieval: unverified until the Gemini key is configured and document embeddings are stored.
-- Voice: unverified until the OpenAI key is configured and a browser session completes a search.
+- OpenAI Realtime speech: token issuance worked, but the in-app browser did not complete microphone capture in this test. The interface switched to guided browser speech and typed replies. A spoken end-to-end Realtime search remains unverified.
+- Supabase signup: UI and configuration are wired; an actual signup and email confirmation remain unverified until a test identity completes the provider flow.
 - Registration, admission, payment, attendance: not implemented; external provider authority.
+- Need quantity, offer acceptance, and delivery to a recipient: unverified. The sourced need is a manually reviewed hackathon seed, not a live partner request.
+- Small Steps Foundation is a prospective first contact, not a partner. Its public website does not establish a specific Helios need, so no card is published on its behalf.
+- The personal action trail is stored only in this browser. Provider acknowledgement and participation are not integrated.
+- The partner need-card migration passed a linked dry run but was not applied. Authenticated draft persistence and partner publication are UNVERIFIED live.
 
 This is agent-useful because agents can act on a typed, attributable next step and stop at the real authority boundary. The individual techniques existed earlier; the product claim is the integrated, verifiable workflow, not a claim that the software was literally impossible a year ago.
