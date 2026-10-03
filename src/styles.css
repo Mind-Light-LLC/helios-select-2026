@@ -25,6 +25,8 @@ a { color: inherit; }
 .globe-error { position: absolute; top: 90px; left: 24px; z-index: 5; max-width: 300px; padding: 12px; color: #813e31; background: #fffaf5; border-radius: 12px; }
 .imagery-credit { position: absolute; right: 16px; bottom: 13px; z-index: 3; padding: 5px 7px; color: #edf1eb; background: #071a2cbc; border-radius: 5px; font-size: 10px; text-decoration: none; }
 .imagery-credit:hover { text-decoration: underline; }
+.place-credit { position: absolute; right: 16px; bottom: 39px; z-index: 3; padding: 5px 7px; color: #edf1eb; background: #071a2cbc; border-radius: 5px; font-size: 10px; text-decoration: none; }
+.place-credit:hover { text-decoration: underline; }
 .maplibregl-ctrl-top-right { top: 76px; right: 14px; }
 .maplibregl-ctrl-group { overflow: hidden; border-radius: 13px !important; box-shadow: 0 9px 28px #02101b6e !important; }
 .globe-marker { display: grid; place-items: center; width: 51px; height: 51px; padding: 0; background: transparent; border: 0; border-radius: 50%; transition: opacity .28s ease; }
@@ -150,6 +152,7 @@ a { color: inherit; }
 .result-main { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
 .result-main strong { font-size: 14px; font-weight: 710; line-height: 1.28; }
 .result-main small { overflow: hidden; color: #698087; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.result-main .result-explanation { overflow: visible; color: #8a684b; line-height: 1.3; white-space: normal; }
 .result-chevron { color: #ad754c; font-size: 27px; }
 .sheet-foot { margin: 11px 3px 0; color: #72888a; font-size: 11px; }
 
@@ -244,6 +247,7 @@ a { color: inherit; }
   .detail-card { right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); left: 12px; width: auto; max-height: calc(100svh - 172px - env(safe-area-inset-bottom)); padding: 18px 18px 16px; }
   .detail-card h2 { font-size: 23px; }
   .imagery-credit { right: 10px; bottom: calc(78px + env(safe-area-inset-bottom)); font-size: 9px; }
+  .place-credit { right: 10px; bottom: calc(102px + env(safe-area-inset-bottom)); font-size: 9px; }
   .agent-window { top: 70px; right: 12px; }
   .guide-window { top: 70px; left: 12px; max-height: calc(100svh - 162px); }
 }

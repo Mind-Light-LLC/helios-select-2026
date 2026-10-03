@@ -1,8 +1,10 @@
 import type { CardDetails, CatalogResponse, SearchOptions, SearchResponse } from '../types';
 import { sourcedNeeds, type NeedView } from '../needData';
 import { demoCatalog } from '../demoCatalog';
-import { searchCurated } from '../sfSearch';
+import { requestedDay, searchCurated } from '../sfSearch';
 import { feasibleItems } from '../feasibleMatch';
+import { searchAlternatives } from '../searchAlternatives';
+import type { MapFocus } from '../mapFocus';
 
 export { assessOffer, sourcedNeeds } from '../needData';
 export type { OfferAssessment, SourcedNeed } from '../needData';
@@ -19,7 +21,7 @@ export type VoiceToken = { value: string; expires_at: number };
 function isLocalViteRouteMiss(response: Response): boolean {
   if (!import.meta.env.DEV) return false;
   const contentType = response.headers.get('content-type') ?? '';
-  return contentType.includes('text/javascript') || (response.status === 404 && !contentType);
+  return !contentType.includes('application/json');
 }
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -56,12 +58,20 @@ export async function searchCatalog(query: string, options: SearchOptions = {}, 
       && (!options.record_kind || item.record_kind === options.record_kind));
     const feasible = feasibleItems(eligible, demoCatalog, query);
     const items = searchCurated(feasible.items, query, options.limit ?? 20);
+    const reason = feasible.reason ?? (requestedDay(query) && !items.length ? 'schedule_unverified' : 'no_relevant_record');
     return { items, mode: 'keyword', fit: items.length ? 'record_match' : 'no_match',
-      reason_codes: items.length ? ['availability_unconfirmed'] : [feasible.reason ?? 'no_relevant_record'],
+      reason_codes: items.length ? ['availability_unconfirmed'] : [reason],
       catalog_count: demoCatalog.length, coverage: 'curated_sample',
-      applied_filters: { country: options.country ?? null, record_kind: options.record_kind ?? null } };
+      applied_filters: { country: options.country ?? null, record_kind: options.record_kind ?? null },
+      ...(items.length ? {} : searchAlternatives(demoCatalog, query, reason, options)) };
   }
   return readJson<SearchResponse>(response);
+}
+
+export async function lookupMapFocus(place: string, signal?: AbortSignal): Promise<MapFocus | null> {
+  const response = await fetch(`/api/geocode?name=${encodeURIComponent(place)}`, { signal });
+  if (isLocalViteRouteMiss(response)) return null;
+  return (await readJson<{ focus: MapFocus | null }>(response)).focus;
 }
 
 export async function requestVoiceToken(): Promise<VoiceToken> {
