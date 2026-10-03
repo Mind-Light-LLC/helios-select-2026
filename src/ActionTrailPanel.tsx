@@ -26,7 +26,7 @@ export function ActionTrail() {
   if (entries.length === 0) return null;
 
   return <section className="action-trail" aria-label="Your actions">
-    <h3>Recent paths</h3>
+    <h3>Recent paths on this device</h3>
     <ol>{entries.map((entry) => <li key={`${entry.kind}:${entry.id}`}>
       <a href={returnUrl(entry)}><strong>{entry.title}</strong><span>{entry.organization}</span></a>
       <small>{entry.state === 'saved' ? 'Saved' : 'Official link selected'} · {recordedLabel(entry.recorded_at)}<br />Provider acknowledgement unknown · Participation unknown</small>
