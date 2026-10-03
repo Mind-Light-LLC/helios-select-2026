@@ -14,7 +14,7 @@ export default function App() {
   const [items, setItems] = useState<HeliosItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [catalogCount, setCatalogCount] = useState(0);
-  const [mode, setMode] = useState<'semantic' | 'keyword' | null>(null);
+  const [mode, setMode] = useState<SearchResponse['mode'] | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;

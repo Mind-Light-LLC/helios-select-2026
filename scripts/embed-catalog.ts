@@ -1,3 +1,5 @@
+import { readGeminiEmbedding } from '../server/gemini-embedding.js';
+
 type CatalogRow = {
   id: string;
   title: string;
@@ -56,13 +58,8 @@ async function embed(row: CatalogRow, key: string): Promise<number[]> {
     body: JSON.stringify({ content: { parts: [{ text }] }, output_dimensionality: 768 }),
   });
   if (!response.ok) throw new Error(`Gemini embedding failed (${response.status}) for ${row.id}.`);
-  const value: unknown = await response.json();
-  if (!object(value) || !Array.isArray(value.embeddings) || !object(value.embeddings[0])
-    || !Array.isArray(value.embeddings[0].values)) throw new Error(`Invalid Gemini response for ${row.id}.`);
-  const vector = value.embeddings[0].values;
-  if (vector.length !== 768 || !vector.every((number: unknown) => typeof number === 'number' && Number.isFinite(number))) {
-    throw new Error(`Gemini returned the wrong embedding size for ${row.id}.`);
-  }
+  const vector = readGeminiEmbedding(await response.json());
+  if (!vector) throw new Error(`Invalid 768-dimensional Gemini embedding for ${row.id}.`);
   return vector;
 }
 
