@@ -5,25 +5,9 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: .73;
-  background-image:
-    radial-gradient(1px 1px at 5% 14%, #ffffffca 98%, transparent),
-    radial-gradient(1px 1px at 14% 72%, #c9e5ffbe 98%, transparent),
-    radial-gradient(2px 2px at 20% 31%, #fff7dbb8 98%, transparent),
-    radial-gradient(1px 1px at 29% 11%, #ffffffbc 98%, transparent),
-    radial-gradient(1px 1px at 31% 84%, #cedfffb0 98%, transparent),
-    radial-gradient(1px 1px at 37% 58%, #ffffff7f 98%, transparent),
-    radial-gradient(2px 2px at 46% 7%, #fff6d6bc 98%, transparent),
-    radial-gradient(1px 1px at 56% 87%, #d8e9ffbd 98%, transparent),
-    radial-gradient(1px 1px at 64% 14%, #e9f2ff9c 98%, transparent),
-    radial-gradient(2px 2px at 73% 69%, #fff1d6b8 98%, transparent),
-    radial-gradient(1px 1px at 80% 22%, #f8ffffba 98%, transparent),
-    radial-gradient(1px 1px at 86% 81%, #c9e8ffaf 98%, transparent),
-    radial-gradient(2px 2px at 93% 42%, #fff7ddaa 98%, transparent),
-    radial-gradient(1px 1px at 97% 12%, #ffffffad 98%, transparent),
-    radial-gradient(1px 1px at 10% 91%, #ffffff98 98%, transparent),
-    radial-gradient(1px 1px at 78% 95%, #ffffffa0 98%, transparent);
-  mask-image: radial-gradient(ellipse 37% 54% at 53% 51%, transparent 73%, #000 96%);
+  background: url('/brand/space-stars.svg') center / cover no-repeat;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
+  mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
 }
 .globe-frame::after {
   z-index: 2;
@@ -90,5 +74,4 @@
 @media (max-width: 760px) {
   .command-zone { left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; transform: none; }
   .agent-window { top: 70px; max-height: calc(100svh - 160px); }
-  .globe-frame::before { mask-image: radial-gradient(ellipse 61% 42% at 50% 48%, transparent 76%, #000 98%); }
 }
