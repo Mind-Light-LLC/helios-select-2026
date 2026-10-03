@@ -276,7 +276,7 @@ export default function App() {
             ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} onUnavailable={() => setVoiceAvailable(false)} />
             : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} onExploreNeeds={() => { setNeedsOpen(true); setAgentOpen(false); setAccountOpen(false); }} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />}
         </form>
-        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'listening' ? 'Listening' : voiceActivity === 'speaking' ? 'Helios is speaking' : 'Tap the mic to talk')}</span>
+        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'listening' ? 'Listening' : voiceActivity === 'speaking' ? 'Helios is speaking' : 'Hold Space to talk · Tap the mic for conversation')}</span>
       </div>
 
       {agentOpen && <AgentWorkbench onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
