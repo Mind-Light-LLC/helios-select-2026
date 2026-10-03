@@ -1,5 +1,6 @@
 .atlas-stage { background: #020a16; }
 .marker-badge.marker-monogram, .organization-mark.is-monogram { color: var(--mark-ink); background: var(--mark-bg); }
+.marker-badge.logo-on-dark, .organization-mark.logo-on-dark { background: #18394a; }
 [data-mark-tone="0"] { --mark-ink: #fff; --mark-bg: #246d62; }
 [data-mark-tone="1"] { --mark-ink: #fff; --mark-bg: #976126; }
 [data-mark-tone="2"] { --mark-ink: #fff; --mark-bg: #486995; }
