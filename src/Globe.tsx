@@ -36,10 +36,10 @@ const earthStyle: maplibregl.StyleSpecification = {
   layers: [{
     id: 'earth', type: 'raster', source: 'earth',
     paint: {
-      'raster-brightness-min': 0.11,
-      'raster-brightness-max': 0.98,
-      'raster-contrast': -0.04,
-      'raster-saturation': 0.08,
+      'raster-brightness-min': 0.04,
+      'raster-brightness-max': 1,
+      'raster-contrast': 0.12,
+      'raster-saturation': 0.58,
     },
   },
     { id: 'shade', type: 'raster', source: 'shade', paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } }],

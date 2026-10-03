@@ -61,7 +61,7 @@ export async function shadeTile(url: string): Promise<ImageBitmap> {
       image.data[index] = 10;
       image.data[index + 1] = 31;
       image.data[index + 2] = 58;
-      image.data[index + 3] = Math.round(opacityFromCosine(cosine) * 130);
+      image.data[index + 3] = Math.round(opacityFromCosine(cosine) * 48);
     }
   }
   context.putImageData(image, 0, 0);
