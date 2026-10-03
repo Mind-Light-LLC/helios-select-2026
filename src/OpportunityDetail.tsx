@@ -45,6 +45,8 @@ export function OpportunityDetail({ item, fit, reasonCodes, mcpHandoff, closeRef
   const [saved, setSaved] = useState(() => readActionTrail().some((entry) => entry.kind === 'item' && entry.id === item.id && entry.state === 'saved'));
   const [cloudSaved, setCloudSaved] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [authError, setAuthError] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -55,10 +57,12 @@ export function OpportunityDetail({ item, fit, reasonCodes, mcpHandoff, closeRef
       const { data, error } = await client.auth.getUser();
       if (!active) return;
       setSignedIn(!error && Boolean(data.user));
+      setAuthError(Boolean(error));
+      setAuthReady(true);
       subscription = client.auth.onAuthStateChange((_event, session) => {
-        if (active) setSignedIn(Boolean(session?.user));
+        if (active) { setSignedIn(Boolean(session?.user)); setAuthError(false); setAuthReady(true); }
       }).data.subscription;
-    }).catch(() => undefined);
+    }).catch(() => { if (active) { setAuthError(true); setAuthReady(true); } });
     return () => { active = false; subscription?.unsubscribe(); };
   }, []);
 
@@ -98,7 +102,7 @@ export function OpportunityDetail({ item, fit, reasonCodes, mcpHandoff, closeRef
   }
 
   async function save() {
-    if (saveBusy) return;
+    if (saveBusy || (!authReady && item.publication_state !== 'curated_demo')) return;
     setSaveError('');
     if (!signedIn || item.publication_state === 'curated_demo') { track('saved'); return; }
     setSaveBusy(true);
@@ -136,9 +140,10 @@ export function OpportunityDetail({ item, fit, reasonCodes, mcpHandoff, closeRef
       <small>The organization controls registration. Opening this page does not reserve a place.</small>
     </section>
 
-    <div className="action-save-row"><button type="button" disabled={saveBusy} onClick={() => void save()}>{cloudSaved && signedIn ? 'Saved to your account' : saved ? 'Saved on this device' : signedIn && item.publication_state !== 'curated_demo' ? 'Save to your account' : 'Save on this device'}</button>
+    <div className="action-save-row"><button type="button" disabled={saveBusy || (!authReady && item.publication_state !== 'curated_demo')} onClick={() => void save()}>{!authReady && item.publication_state !== 'curated_demo' ? 'Checking account…' : cloudSaved && signedIn ? 'Saved to your account' : signedIn && item.publication_state !== 'curated_demo' ? 'Save to your account' : saved ? 'Saved on this device' : 'Save on this device'}</button>
       <span>Provider acknowledgement: unknown · Participation: unknown</span></div>
-    {!signedIn && item.publication_state !== 'curated_demo' && <button className="sync-prompt" type="button" onClick={onAccount}>Sign in to save across devices ↗</button>}
+    {authReady && !signedIn && item.publication_state !== 'curated_demo' && <button className="sync-prompt" type="button" onClick={onAccount}>Sign in to save across devices ↗</button>}
+    {authError && item.publication_state !== 'curated_demo' && <p className="record-refresh-note" role="status">Account status could not be checked. Saves on this device will not sync.</p>}
     {signedIn && item.publication_state === 'curated_demo' && <p className="record-refresh-note">This catalog preview saves only on this device.</p>}
     {saveError && <p className="record-refresh-note" role="alert">{saveError}</p>}
 
