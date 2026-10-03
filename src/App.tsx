@@ -212,6 +212,16 @@ export default function App() {
     if (place) void focusPlace(place);
     else focusQuery(spokenQuery);
     acceptSearch(response);
+    if (place) setSelectedId(null);
+  };
+
+  const focusVoicePlace = async (place: string): Promise<boolean> => {
+    setSelectedId(null);
+    setResultsOpen(false);
+    setNeedsOpen(false);
+    setAgentOpen(false);
+    setAccountOpen(false);
+    return focusPlace(place);
   };
 
   const focusItem = (id: string) => {
@@ -268,7 +278,7 @@ export default function App() {
             {!query && <span className="search-example" key={exampleIndex} aria-hidden="true">{exampleQueries[exampleIndex]}</span>}</span>
           <button type="submit" className="search-submit" disabled={busy || !query.trim()} aria-label="Search opportunities">↗</button>
           <span className="dock-divider" aria-hidden="true" />
-          <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onPlace={focusPlace} onNeed={focusNeed} results={[...items, ...alternatives.map(({ item }) => item)]} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
+          <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onPlace={focusVoicePlace} onNeed={focusNeed} results={[...items, ...alternatives.map(({ item }) => item)]} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
         </form>
         <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'connecting' ? 'Connecting HeliOS voice…' : voiceActivity === 'listening' ? 'Listening to you' : voiceActivity === 'speaking' ? 'Helios is speaking' : voiceActivity === 'hold-ready' ? 'Hold Option to speak · Tap the mic to stop' : voiceActivity === 'ready' ? 'Speak to HeliOS · Tap the mic to stop' : voiceAvailable ? 'Hold Option to talk · Tap the mic for conversation' : 'OpenAI voice unavailable in this preview')}</span>
       </div>
