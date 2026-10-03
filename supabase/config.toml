@@ -385,6 +385,13 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[compute.compute-azalea-126184]
+runtime   = "deno"
+size      = "2gb-1vcpu"    # 2 GB · 1 vCPU
+exposure  = "private"
+instances = 1
+# region is locked to us-west-2 at alpha
+
 [analytics]
 enabled = true
 port = 54327
