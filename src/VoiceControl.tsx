@@ -204,7 +204,7 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   async function start() {
     const generation = ++generationRef.current;
     setState('requesting');
-    setCaption('Hey, what’s up? How do you want to help out in the world? Tell me a cause, city, free day, or budget.');
+    setCaption('Hey, what’s up? I’m HeliOS. How would you like to help? A cause, a city, a free Sunday, or ten dollars is plenty to start.');
     setError(null);
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('A microphone is unavailable in this browser.');

@@ -23,8 +23,8 @@ type Props = {
   startRequest: number;
 };
 
-const greeting = 'Hey, what’s up? How do you want to help out in the world? Tell me a cause, city, free day, or budget, and I’ll find sourced ways to help.';
-const howItWorks = 'Tell me a cause, city, free day, or budget. I’ll find sourced organizations and show their timing and official next steps. You can also explore needs or connect another agent to the same records. What would you like to try?';
+const greeting = 'Hey, what’s up? I’m HeliOS. How would you like to help? A cause, a city, a free Sunday, or ten dollars is plenty to start. No grand plan required.';
+const howItWorks = 'Tell me a cause, place, free day, or budget. I’ll find sourced organizations and show what we know about timing and official next steps. You can explore needs or connect another agent to the same records. I do the digging; the organization gives the final yes. What would you like to try?';
 
 export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
   const [active, setActive] = useState(false);
@@ -141,12 +141,12 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
       const item = named ?? existing[ordinal];
       if (item) {
         onFocus(item.id);
-        speak(`${item.organization_name}: ${item.summary} I’ve opened its official next step and source on the screen. ${item.availability_status === 'not_confirmed' ? 'Please confirm a place with the organization.' : ''}`);
+        speak(`${item.organization_name}: ${item.summary} I’ve put its source and official next step on screen. ${item.availability_status === 'not_confirmed' ? 'Please confirm a place with the organization.' : ''}`);
         return;
       }
     }
     if (/^(help|anything|not sure|i don.t know|what can i do)[.!? ]*$/i.test(text)) {
-      speak('Would you rather volunteer your time or give money? You can tell me a cause, a free day like Sunday, or a budget like ten dollars.');
+      speak('We can start small. Would you rather give time or money? A cause, a free day like Sunday, or a budget like ten dollars is enough for me to search.');
       return;
     }
     searchRef.current?.abort();
@@ -162,7 +162,7 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
       if (response.items.length === 0) {
         speak(response.reason_codes?.includes('location_unknown')
           ? 'I do not know your location. Which city or country should I search?'
-          : 'I don’t have a verified match in this small catalog yet. What city or cause should I try next?');
+          : 'Big planet, small catalog. I don’t have a sourced match for that yet. What other city or cause should I try?');
         return;
       }
       const options = response.items.slice(0, 2).map((item) => `${item.organization_name} in ${item.place_label}`).join(', and ');
