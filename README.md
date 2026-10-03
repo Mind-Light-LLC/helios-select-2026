@@ -25,7 +25,7 @@ Read the [product brief](docs/product-brief.md) for the demo scope, [voice-to-ve
 
 ## Run locally
 
-Use Node.js 22 or newer. Run `npm ci`, then `npm run dev`. Vite serves the 30-record demo catalog, with browser speech and typed replies when recognition is unavailable. `npm run build` typechecks and compiles the client. The globe uses NASA GIBS Blue Marble imagery from August 2004 with on-map attribution.
+Use Node.js 22 or newer. Run `npm ci`, then `npm run dev`. Vite serves the 30-record demo catalog and text search. OpenAI Realtime is the sole voice path: hold Option to speak or tap the mic for a conversation. The search bar glows cyan while listening and amber while HeliOS speaks. When paid voice is unavailable, type in the search bar. `npm run build` typechecks and compiles the client. The globe uses NASA GIBS Blue Marble imagery from August 2004 with on-map attribution.
 
 Use `vercel dev` for the full API, Supabase Auth, MCP, and OpenAI Realtime path. The API runtime needs `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for its isolated HeliOS project. `GEMINI_API_KEY` and `OPENAI_API_KEY` belong only in server-side settings. Never commit credentials. Account creation uses Supabase email/password Auth; a hosted project may require email confirmation and a configured redirect URL. Guests can still explore.
 
