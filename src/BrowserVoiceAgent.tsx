@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { searchCatalog } from '@api';
 import type { HeliosItem, SearchResponse } from './types';
+import type { VoiceActivity } from './voiceActivity';
 
 type RecognitionEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
 type Recognition = {
@@ -20,30 +21,42 @@ type RecognitionWindow = Window & {
 type Props = {
   onSearch: (response: SearchResponse) => void;
   onFocus: (id: string) => void;
+  onExploreNeeds: () => void;
   startRequest: number;
+  holdToTalk: boolean;
+  onActivityChange: (activity: VoiceActivity) => void;
+  onNotice: (notice: string | null) => void;
 };
 
-const greeting = 'Hey, what’s up? I’m HeliOS. How would you like to help? A cause, a city, a free Sunday, or ten dollars is plenty to start. No grand plan required.';
-const howItWorks = 'Tell me a cause, place, free day, or budget. I’ll find sourced organizations and show what we know about timing and official next steps. You can explore needs or connect another agent to the same records. I do the digging; the organization gives the final yes. What would you like to try?';
+const greeting = 'Hi, I’m Helios. I can find sourced ways to help and show the official next step. Would you like to give time, offer something you have, or make a donation?';
+const howItWorks = 'I can search public opportunities by cause, place, time, or budget, and show their sources and official next steps. Explore needs shows public requests, and Connect agents shares published records with another agent. Organizations confirm signups, gifts, and deliveries. What would you like to do first?';
 
-export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
+export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequest, holdToTalk, onActivityChange, onNotice }: Props) {
   const [active, setActive] = useState(false);
   const [status, setStatus] = useState('');
   const [caption, setCaption] = useState('');
   const [answer, setAnswer] = useState('');
   const [error, setError] = useState('');
   const activeRef = useRef(false);
+  const modeRef = useRef<'continuous' | 'hold'>('continuous');
   const recognitionRef = useRef<Recognition | null>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   const searchRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const resultsRef = useRef<HeliosItem[]>([]);
+  const pendingIntentRef = useRef<'time' | 'money' | null>(null);
+  useEffect(() => onNotice(error || null), [error, onNotice]);
 
   function listen() {
     if (!activeRef.current) return;
     const browser = window as RecognitionWindow;
     const Constructor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
-    if (!Constructor) { setStatus('Type your reply'); return; }
+    if (!Constructor) {
+      setStatus('Type your reply');
+      onActivityChange('idle');
+      setError('Voice input is unavailable in this browser. You can type your reply.');
+      return;
+    }
     const recognition = new Constructor();
     recognition.lang = 'en-US';
     recognition.continuous = false;
@@ -53,41 +66,50 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
       heard = true;
       const transcript = event.results[0]?.[0]?.transcript?.trim();
       if (transcript) void respond(transcript);
-      else setStatus('Type your reply');
+      else { setStatus('Type your reply'); onActivityChange('idle'); setError('I could not hear you. You can type your reply.'); }
     };
-    recognition.onerror = () => { if (activeRef.current) setStatus('Type your reply'); };
+    recognition.onerror = () => { if (activeRef.current) { setStatus('Type your reply'); onActivityChange('idle'); setError('Voice input failed. Check microphone access or type your reply.'); } };
     recognition.onend = () => {
       if (recognitionRef.current === recognition) recognitionRef.current = null;
-      if (!heard && activeRef.current) setStatus('Type your reply');
+      if (!heard && activeRef.current) { setStatus('Type your reply'); onActivityChange('idle'); setError('I could not hear you. You can type your reply.'); }
     };
     recognitionRef.current = recognition;
-    try { recognition.start(); setStatus('Listening'); }
-    catch { recognitionRef.current = null; setStatus('Type your reply'); }
+    try { recognition.start(); setStatus('Listening'); onActivityChange('listening'); }
+    catch { recognitionRef.current = null; setStatus('Type your reply'); onActivityChange('idle'); setError('Voice input could not start. You can type your reply.'); }
   }
 
   function speak(message: string) {
     if (!activeRef.current) return;
     setCaption(message);
     setStatus('Helios is speaking');
-    if (!('speechSynthesis' in window)) { listen(); return; }
+    onActivityChange('speaking');
+    if (!('speechSynthesis' in window)) {
+      setStatus('Type your reply');
+      onActivityChange('idle');
+      return;
+    }
     if (speechRef.current) { speechRef.current.onend = null; speechRef.current.onerror = null; }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(message);
     speechRef.current = utterance;
     utterance.rate = 1.02;
-    utterance.onend = () => listen();
-    utterance.onerror = () => listen();
+    utterance.onend = () => modeRef.current === 'hold' ? stop() : listen();
+    utterance.onerror = () => { stop(); setError('Voice playback failed. Use search.'); };
     window.speechSynthesis.speak(utterance);
   }
 
-  function start() {
+  function start(mode: 'continuous' | 'hold' = 'continuous') {
     if (activeRef.current) return;
     activeRef.current = true;
+    modeRef.current = mode;
     generationRef.current += 1;
     setActive(true);
     setError('');
+    setCaption('');
     resultsRef.current = [];
-    speak(greeting);
+    pendingIntentRef.current = null;
+    if (mode === 'hold') listen();
+    else speak(greeting);
   }
 
   function stop() {
@@ -97,12 +119,15 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
     recognitionRef.current = null;
     searchRef.current?.abort();
     searchRef.current = null;
+    pendingIntentRef.current = null;
     if (speechRef.current) { speechRef.current.onend = null; speechRef.current.onerror = null; }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     setActive(false);
     setStatus('');
     setCaption('');
+    setAnswer('');
     setError('');
+    onActivityChange('idle');
   }
 
   useEffect(() => () => {
@@ -111,16 +136,24 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
     searchRef.current?.abort();
     if (speechRef.current) { speechRef.current.onend = null; speechRef.current.onerror = null; }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    onActivityChange('idle');
   }, []);
 
   useEffect(() => { if (startRequest > 0 && !activeRef.current) start(); }, [startRequest]);
+
+  useEffect(() => {
+    if (holdToTalk && !activeRef.current) { start('hold'); return; }
+    if (modeRef.current !== 'hold') return;
+    if (!holdToTalk) recognitionRef.current?.stop();
+    else if (activeRef.current && !recognitionRef.current && !searchRef.current) listen();
+  }, [holdToTalk]);
 
   async function respond(raw: string) {
     const text = raw.trim();
     if (!text || !activeRef.current) return;
     setAnswer('');
     setError('');
-    setCaption(`You: ${text}`);
+    onActivityChange('idle');
     if (speechRef.current) { speechRef.current.onend = null; speechRef.current.onerror = null; }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (recognitionRef.current) {
@@ -132,7 +165,24 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
     const existing = resultsRef.current;
     const lower = text.toLowerCase();
     if (/\b(how (?:does|do) (?:helios|this|the app|it) work|how (?:can|do) i use (?:helios|this|the app|it)|what (?:can|does) (?:helios|this|the app) do|show me how|explain (?:helios|the app|how))/i.test(lower)) {
+      pendingIntentRef.current = null;
       speak(howItWorks);
+      return;
+    }
+    if (/^(?:i(?:'d| would)? (?:like|want) to )?(?:volunteer|give (?:my )?time|time)[.!? ]*$/i.test(text)) {
+      pendingIntentRef.current = 'time';
+      speak('Which city or country would you like to volunteer in? You can add a day that works for you.');
+      return;
+    }
+    if (/^(?:i(?:'d| would)? (?:like|want) to )?(?:donate|give money|money)[.!? ]*$/i.test(text)) {
+      pendingIntentRef.current = 'money';
+      speak('Which cause or place matters to you? You can include a budget.');
+      return;
+    }
+    if (/^(?:i(?:'d| would)? (?:like|want) to )?(?:offer something(?: i have)?|offer an item|something i have|explore needs)[.!? ]*$/i.test(text)) {
+      pendingIntentRef.current = null;
+      onExploreNeeds();
+      speak('I opened Explore needs. Pick a sourced request and use Check offer to see whether your contribution might fit. The organization still needs to confirm it.');
       return;
     }
     const ordinal = /\b(second|2nd)\b/.test(lower) ? 1 : /\b(third|3rd)\b/.test(lower) ? 2 : 0;
@@ -140,29 +190,34 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
     if ((/\b(show|tell me about|more about|first|second|third|yes)\b/.test(lower) || named) && existing.length) {
       const item = named ?? existing[ordinal];
       if (item) {
+        pendingIntentRef.current = null;
         onFocus(item.id);
-        speak(`${item.organization_name}: ${item.summary} I’ve put its source and official next step on screen. ${item.availability_status === 'not_confirmed' ? 'Please confirm a place with the organization.' : ''}`);
+        speak(`${item.organization_name}: ${item.summary} I’ve opened its card with the official next-step link and source on screen. ${item.availability_status === 'not_confirmed' ? 'Please confirm a place with the organization.' : ''}`);
         return;
       }
     }
     if (/^(help|anything|not sure|i don.t know|what can i do)[.!? ]*$/i.test(text)) {
-      speak('We can start small. Would you rather give time or money? A cause, a free day like Sunday, or a budget like ten dollars is enough for me to search.');
+      pendingIntentRef.current = null;
+      speak('Would you rather volunteer your time or give money? You can tell me a cause, a free day like Sunday, or a budget like ten dollars.');
       return;
     }
+    const intent = pendingIntentRef.current;
+    pendingIntentRef.current = null;
+    const query = intent === 'time' ? `volunteer ${text}` : intent === 'money' ? `donate ${text}` : text;
     searchRef.current?.abort();
     const controller = new AbortController();
     searchRef.current = controller;
     const generation = generationRef.current;
     setStatus('Searching sourced opportunities');
     try {
-      const response = await searchCatalog(text, {}, controller.signal);
+      const response = await searchCatalog(query, {}, controller.signal);
       if (!activeRef.current || generation !== generationRef.current || controller.signal.aborted) return;
       onSearch(response);
       resultsRef.current = response.items;
       if (response.items.length === 0) {
         speak(response.reason_codes?.includes('location_unknown')
           ? 'I do not know your location. Which city or country should I search?'
-          : 'Big planet, small catalog. I don’t have a sourced match for that yet. What other city or cause should I try?');
+          : 'I don’t have a verified match in this small catalog yet. What city or cause should I try next?');
         return;
       }
       const options = response.items.slice(0, 2).map((item) => `${item.organization_name} in ${item.place_label}`).join(', and ');
@@ -173,14 +228,14 @@ export function BrowserVoiceAgent({ onSearch, onFocus, startRequest }: Props) {
       speak(`I found ${response.items.length} sourced ${response.items.length === 1 ? 'path' : 'paths'}, including ${options}. ${timingNote}${giftNote}Want me to show you the first one, or tell me another place or cause?`);
     } catch (cause: unknown) {
       if (!controller.signal.aborted && activeRef.current) {
-        setStatus('Type your reply');
         setError(cause instanceof Error ? cause.message : 'Search unavailable.');
+        speak('Search is unavailable right now. Please try again later.');
       }
     } finally { if (searchRef.current === controller) searchRef.current = null; }
   }
 
   return <div className="voice-control">
-    <button type="button" className={`voice-button ${active ? 'is-live' : ''}`} onClick={active ? stop : start}
+    <button type="button" className={`voice-button ${active ? 'is-live' : ''}`} onClick={active ? stop : () => start()}
       aria-label={active ? 'Stop Helios conversation' : 'Talk to Helios'} aria-pressed={active}>
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" /></svg>
     </button>

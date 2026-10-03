@@ -4,6 +4,7 @@ import type { HeliosItem, SearchResponse } from './types';
 import { isCurrentReview } from './sfSearch';
 import { requestMicrophone } from './voiceMedia';
 import { executeNeedVoiceTool } from './voiceNeedTools';
+import type { VoiceActivity } from './voiceActivity';
 
 type Props = {
   available: boolean;
@@ -12,10 +13,13 @@ type Props = {
   onNeed: (id: string, offer?: string) => void;
   results: HeliosItem[];
   startRequest: number;
+  holdToTalk: boolean;
+  onActivityChange: (activity: VoiceActivity) => void;
+  onNotice: (notice: string | null) => void;
   onUnavailable?: () => void;
 };
 
-type VoiceState = 'idle' | 'requesting' | 'connecting' | 'ready' | 'listening' | 'searching' | 'responding';
+type VoiceState = 'idle' | 'requesting' | 'connecting' | 'ready' | 'listening' | 'searching' | 'responding' | 'speaking';
 type FunctionCall = { type: 'function_call'; name: string; call_id: string; arguments: string };
 type RealtimeEvent = Record<string, unknown> & { type: string };
 
@@ -48,19 +52,12 @@ function optionalStringField(args: Record<string, unknown>, name: string): strin
   return getStringField(args, name);
 }
 
-const stateLabel: Record<Exclude<VoiceState, 'idle'>, string> = {
-  requesting: 'Requesting microphone',
-  connecting: 'Connecting',
-  ready: 'Microphone on',
-  listening: 'Listening',
-  searching: 'Searching',
-  responding: 'Responding',
-};
-
-export function VoiceControl({ available, onSearch, onFocus, onNeed, results, startRequest, onUnavailable }: Props) {
+export function VoiceControl({ available, onSearch, onFocus, onNeed, results, startRequest, holdToTalk, onActivityChange, onNotice, onUnavailable }: Props) {
   const [state, setState] = useState<VoiceState>('idle');
   const [caption, setCaption] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const holdRef = useRef(false);
+  const holdModeRef = useRef(false);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -71,6 +68,9 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   const needsRef = useRef<NeedView[]>([]);
   const callbacksRef = useRef({ onSearch, onFocus, onNeed });
   useEffect(() => { resultsRef.current = results; callbacksRef.current = { onSearch, onFocus, onNeed }; }, [results, onSearch, onFocus, onNeed]);
+  useEffect(() => { onActivityChange(state === 'listening' || state === 'speaking' ? state : 'idle'); }, [state, onActivityChange]);
+  useEffect(() => onNotice(error), [error, onNotice]);
+  useEffect(() => () => onActivityChange('idle'), [onActivityChange]);
 
   function releaseResources() {
     searchRef.current?.abort();
@@ -89,7 +89,9 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   function stop() {
     generationRef.current += 1;
     releaseResources();
+    holdModeRef.current = false;
     setCaption('');
+    setError(null);
     setState('idle');
   }
 
@@ -181,7 +183,7 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
       searchRef.current?.abort();
       searchRef.current = null;
       setCaption('');
-      setState('listening');
+      if (!holdModeRef.current || holdRef.current) setState('listening');
     } else if (event.type === 'input_audio_buffer.speech_stopped') {
       setState('responding');
     } else if (event.type === 'response.created') {
@@ -189,22 +191,22 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
       setState('responding');
     } else if (event.type === 'response.output_audio_transcript.delta' && typeof event.delta === 'string') {
       setCaption((current) => `${current}${event.delta}`.slice(-240));
-      setState('responding');
     } else if (event.type === 'response.output_item.done' && isFunctionCall(event.item)) {
       void handleCall(event.item, channel, generation);
     } else if (event.type === 'output_audio_buffer.started') {
-      setState('responding');
+      setState('speaking');
     } else if (event.type === 'output_audio_buffer.stopped') {
       setState('ready');
     } else if (event.type === 'error') {
+      setState('ready');
       setError('The voice session reported an error.');
     }
   }
 
-  async function start() {
+  async function start(mode: 'continuous' | 'hold' = 'continuous') {
     const generation = ++generationRef.current;
+    holdModeRef.current = mode === 'hold';
     setState('requesting');
-    setCaption('Hey, what’s up? I’m HeliOS. How would you like to help? A cause, a city, a free Sunday, or ten dollars is plenty to start.');
     setError(null);
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('A microphone is unavailable in this browser.');
@@ -222,12 +224,13 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
         return;
       }
       streamRef.current = stream;
+      stream.getAudioTracks().forEach((track) => { track.enabled = mode === 'continuous' || holdRef.current; });
       stream.getTracks().forEach((track) => peer.addTrack(track, stream));
       const channel = peer.createDataChannel('oai-events');
       channel.addEventListener('open', () => {
         if (generation !== generationRef.current) return;
-        setState('ready');
-        channel.send(JSON.stringify({ type: 'response.create' }));
+        setState(mode === 'hold' && holdRef.current ? 'listening' : 'ready');
+        if (mode === 'continuous') channel.send(JSON.stringify({ type: 'response.create' }));
       });
       channel.addEventListener('message', (event: MessageEvent<string>) => {
         try {
@@ -271,12 +274,25 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
     if (startRequest > 0 && available && state === 'idle') void start();
   }, [startRequest]);
 
+  useEffect(() => {
+    holdRef.current = holdToTalk;
+    if (holdToTalk && available && state === 'idle') { void start('hold'); return; }
+    if (!holdModeRef.current) return;
+    const track = streamRef.current?.getAudioTracks()[0];
+    if (track) track.enabled = holdToTalk;
+    if (holdToTalk && track && state === 'ready') setState('listening');
+    if (!holdToTalk && state === 'listening') setState('ready');
+  }, [holdToTalk]);
+
   const active = state !== 'idle';
   return <div className="voice-control">
     <button type="button" className={`voice-button ${active ? 'is-live' : ''}`} onClick={active ? stop : () => void start()} disabled={!available} aria-label={active ? 'Stop voice' : available ? 'Start voice' : 'Voice unavailable'} aria-pressed={active} title={!available ? 'Voice is unavailable right now' : undefined}>
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" /></svg>
     </button>
-    {active && <div className="voice-status" role="status" aria-live="polite"><strong>{stateLabel[state]}</strong>{caption && <p>{caption}</p>}</div>}
-    {error && <span className="voice-error" role="alert">{error}</span>}
+    {active && <div className="voice-status" role="status" aria-live="polite">
+      <strong>{state === 'speaking' ? 'Helios is speaking' : state === 'ready' ? 'Microphone on' : state}</strong>
+      {caption && <p>{caption}</p>}
+    </div>}
+    {error && <span className="sr-only" role="alert">{error}</span>}
   </div>;
 }
