@@ -37,7 +37,10 @@ export function mapFocusForQuery(query: string, catalog: HeliosItem[]): MapFocus
 export function placeForQuery(query: string): string | null {
   if (/\b(?:worldwide|global|anywhere|near me|nearby)\b|around the world/i.test(query)) return null;
   const match = /\b(?:in|near|around)\s+(?:the\s+)?([\p{L}][\p{L}\s,'-]{1,65})/iu.exec(query);
-  const raw = match?.[1] ?? (/^[\p{L}\s,'-]{2,65}$/u.test(query.trim()) ? query.trim() : '');
+  const bare = query.trim();
+  const raw = match?.[1] ?? (/^[\p{L}\s,'-]{2,65}$/u.test(bare)
+    && !/\b(?:volunteer\w*|opportunit\w*|donat\w*|help|food|need\w*|organization\w*|role\w*|cause\w*)\b/i.test(bare)
+    ? bare : '');
   const place = raw.split(/\b(?:on|at|for|by|with|this|next|today|tomorrow|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i)[0]
     ?.trim().replace(/[,\s]+$/, '');
   return place && place.length >= 2 ? place : null;

@@ -10,24 +10,36 @@ export function useMapFocus(catalog: HeliosItem[]) {
 
   useEffect(() => () => requestRef.current?.abort(), []);
 
+  const focusPlace = useCallback(async (place: string): Promise<boolean> => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setNotice(null);
+    const known = mapFocusForQuery(place, catalog);
+    setFocus(known);
+    if (known) return true;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    try {
+      const resolved = await lookupMapFocus(place, controller.signal);
+      if (controller.signal.aborted) return false;
+      if (resolved) setFocus(resolved);
+      else setNotice('That place could not be located on the globe. Catalog pins remain visible.');
+      return Boolean(resolved);
+    } catch {
+      if (!controller.signal.aborted) setNotice('Place lookup is unavailable. Catalog pins remain visible.');
+      return false;
+    }
+  }, [catalog]);
+
   const focusQuery = useCallback((query: string) => {
     requestRef.current?.abort();
     requestRef.current = null;
     setNotice(null);
     const known = mapFocusForQuery(query, catalog);
-    setFocus(known);
-    const place = known ? null : placeForQuery(query);
-    if (!place) return;
-    const controller = new AbortController();
-    requestRef.current = controller;
-    void lookupMapFocus(place, controller.signal).then((resolved) => {
-      if (controller.signal.aborted) return;
-      if (resolved) setFocus(resolved);
-      else setNotice('That place could not be located on the globe. Catalog pins remain visible.');
-    }).catch(() => {
-      if (!controller.signal.aborted) setNotice('Place lookup is unavailable. Catalog pins remain visible.');
-    });
-  }, [catalog]);
+    if (known) { setFocus(known); return; }
+    const place = placeForQuery(query);
+    if (place) void focusPlace(place);
+  }, [catalog, focusPlace]);
 
   const focusWorld = useCallback(() => {
     requestRef.current?.abort();
@@ -36,5 +48,5 @@ export function useMapFocus(catalog: HeliosItem[]) {
     setFocus({ longitude: 5, latitude: 5, scale: 'world' });
   }, []);
 
-  return { focus, notice, focusQuery, focusWorld };
+  return { focus, notice, focusQuery, focusPlace, focusWorld };
 }

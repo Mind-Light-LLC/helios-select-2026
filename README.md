@@ -13,7 +13,7 @@ This is an original project built for the Supabase Select 2026 Hackathon. It is 
 | Surface | Current behavior |
 | --- | --- |
 | Globe and search | 47 sourced paths across 27 country labels, with source dates and official next steps. All pins remain on the globe after a search; nearby pins group at world scale and split when zoomed. An empty match offers sourced alternatives when available. |
-| HeliOS voice | OpenAI Realtime conversation in the bottom search dock, with no voice popup. Hold Option to speak or tap the mic for a conversation. The dock glows cyan while listening and amber while HeliOS speaks. Voice runs only where the server enables it. |
+| HeliOS voice | OpenAI Realtime conversation in the bottom search dock, with no voice popup. Hold Option to speak or tap the mic for a conversation. HeliOS waits for the person to speak, aims to answer in their chosen language, and uses English search terms internally. The dock glows cyan while listening and amber while HeliOS speaks. Voice runs only where the server enables it. |
 | Agent handoff | A read-only MCP and JSON interface exposes the same records, source links, publication state, and action authority. |
 | External outcomes | Official partner links are handoffs. HeliOS does not submit, book, donate, or claim an outcome without a provider receipt. |
 
@@ -26,7 +26,7 @@ The globe uses [NASA GIBS Blue Marble imagery](docs/visual-sources.md). Organiza
 3. Ask **"I have ten dollars"** or **"What does this organization do?"** HeliOS narrows the catalog and explains what is known. A donation happens on the organization's own site.
 4. Open **Explore needs** to inspect a sourced public signal, or **Connect an agent** to see the same published records through MCP. Save a path in **My actions** if you want to return to it.
 
-The catalog currently combines 29 sourced global paths with 18 manually reviewed San Francisco paths across 15 organizations. Nine global records are published in the isolated HeliOS Supabase project; newer global paths remain labeled `curated_demo` pending publication review. Six San Francisco organizations have reviewed official donation paths. Empty search results mean this limited catalog has no match, not that the world has no opportunity.
+The catalog currently combines 29 sourced global paths with 18 manually reviewed San Francisco paths across 15 organizations. Nine global records are published in the isolated HeliOS Supabase project; newer global paths remain labeled `curated_demo` pending publication review. Six San Francisco organizations have reviewed official donation paths. Voice and text searches use the same `/api/search` route. When Realtime supplies a named place, the client preserves it in the search and focuses the globe there; broad volunteer searches return volunteer records without inventing an opening. Empty search results mean this limited catalog has no match, not that the world has no opportunity.
 
 ## The point of the product
 

@@ -4,12 +4,14 @@ import type { HeliosItem, SearchResponse } from './types';
 import { requestMicrophone } from './voiceMedia';
 import { executeNeedVoiceTool } from './voiceNeedTools';
 import { voiceSearchOutput } from './voiceSearchOutput';
+import { voiceCatalogQuery } from './voiceCatalogQuery';
 import type { VoiceActivity } from './voiceActivity';
 
 type Props = {
   available: boolean;
-  onSearch: (response: SearchResponse, query: string) => void;
+  onSearch: (response: SearchResponse, query: string, place?: string) => void;
   onFocus: (id: string) => void;
+  onPlace: (place: string) => Promise<boolean>;
   onNeed: (id: string, offer?: string) => void;
   results: HeliosItem[];
   startRequest: number;
@@ -51,7 +53,12 @@ function optionalStringField(args: Record<string, unknown>, name: string): strin
   return getStringField(args, name);
 }
 
-export function VoiceControl({ available, onSearch, onFocus, onNeed, results, startRequest, holdToTalk, onActivityChange, onNotice }: Props) {
+function optionalPlaceField(args: Record<string, unknown>): string | undefined {
+  if (args.place === undefined || args.place === null || args.place === '') return undefined;
+  return getStringField(args, 'place');
+}
+
+export function VoiceControl({ available, onSearch, onFocus, onPlace, onNeed, results, startRequest, holdToTalk, onActivityChange, onNotice }: Props) {
   const [state, setState] = useState<VoiceState>('idle');
   const [error, setError] = useState<string | null>(null);
   const holdRef = useRef(false);
@@ -65,8 +72,8 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   const generationRef = useRef(0);
   const resultsRef = useRef(results);
   const needsRef = useRef<NeedView[]>([]);
-  const callbacksRef = useRef({ onSearch, onFocus, onNeed });
-  useEffect(() => { resultsRef.current = results; callbacksRef.current = { onSearch, onFocus, onNeed }; }, [results, onSearch, onFocus, onNeed]);
+  const callbacksRef = useRef({ onSearch, onFocus, onPlace, onNeed });
+  useEffect(() => { resultsRef.current = results; callbacksRef.current = { onSearch, onFocus, onPlace, onNeed }; }, [results, onSearch, onFocus, onPlace, onNeed]);
   useEffect(() => {
     const activity: VoiceActivity = state === 'idle' ? 'idle' : state === 'listening' || state === 'speaking' ? state
       : state === 'requesting' || state === 'connecting' ? 'connecting' : holdModeRef.current ? 'hold-ready' : 'ready';
@@ -110,7 +117,9 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
     try {
       const args = toolArguments(call.arguments);
       if (call.name === 'search_catalog') {
-        const query = getStringField(args, 'query');
+        const place = optionalPlaceField(args);
+        const replyLanguage = optionalStringField(args, 'reply_language');
+        const query = voiceCatalogQuery(getStringField(args, 'query'), place);
         const country = optionalStringField(args, 'country');
         searchRef.current?.abort();
         const controller = new AbortController();
@@ -119,10 +128,17 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
         setState('searching');
         const response = await searchCatalog(query, country ? { country } : {}, controller.signal);
         if (generation !== generationRef.current || controller.signal.aborted) return;
-        callbacksRef.current.onSearch(response, query);
+        callbacksRef.current.onSearch(response, query, place);
         resultsRef.current = [...response.items, ...(response.alternatives ?? []).map(({ item }) => item)];
-        output = voiceSearchOutput(response);
+        output = { ...voiceSearchOutput(response), reply_language: replyLanguage ?? null };
         if (searchRef.current === controller) searchRef.current = null;
+      } else if (call.name === 'focus_place') {
+        const place = getStringField(args, 'place');
+        const replyLanguage = optionalStringField(args, 'reply_language');
+        const focused = await callbacksRef.current.onPlace(place);
+        output = { focused, place, reply_language: replyLanguage ?? null, note: focused
+          ? 'Globe moved to the named place; local opportunities were not verified.'
+          : 'The place could not be located on the globe. Catalog pins remain visible.' };
       } else if (call.name === 'focus_result') {
         const id = getStringField(args, 'id');
         const result = resultsRef.current.find((item) => item.id === id);
@@ -211,7 +227,6 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
       channel.addEventListener('open', () => {
         if (generation !== generationRef.current) return;
         setState(mode === 'hold' && holdRef.current ? 'listening' : 'ready');
-        if (mode === 'continuous') channel.send(JSON.stringify({ type: 'response.create' }));
       });
       channel.addEventListener('message', (event: MessageEvent<string>) => {
         try {

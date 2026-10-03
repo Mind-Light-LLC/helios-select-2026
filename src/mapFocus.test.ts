@@ -14,4 +14,6 @@ test('unknown places do not invent map coordinates', () => {
   assert.equal(placeForQuery('volunteer in Rwanda on Friday'), 'Rwanda');
   assert.equal(placeForQuery('volunteer near Oakland, California this Saturday'), 'Oakland, California');
   assert.equal(placeForQuery('opportunities around the world'), null);
+  assert.equal(placeForQuery('volunteer opportunities'), null);
+  assert.equal(placeForQuery('Oakland'), 'Oakland');
 });
