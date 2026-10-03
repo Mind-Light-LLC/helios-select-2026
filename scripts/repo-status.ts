@@ -43,7 +43,11 @@ try {
     const included = run('git', ['merge-base', '--is-ancestor', 'HEAD', 'origin/main'], tree.path).status === 0;
     console.log(`${dirty} dirty | ${ahead} ahead | ${behind} behind | ${included ? 'HEAD in main' : 'HEAD pending'} | ${tree.branch} | ${tree.path}`);
   }
-  const prs = run('gh', ['pr', 'list', '--state', 'open', '--limit', '30'], repo);
+  const prs = run('gh', [
+    'pr', 'list', '--state', 'open', '--limit', '30',
+    '--json', 'number,title,headRefName,baseRefName,isDraft',
+    '--jq', '.[] | "#\\(.number) \\(if .isDraft then "[draft]" else "[open]" end) \\(.headRefName) -> \\(.baseRefName): \\(.title)"',
+  ], repo);
   console.log(`\nOpen PRs (up to 30):\n${prs.status === 0 ? prs.stdout || '(none)' : `Unavailable: ${prs.stderr}`}`);
 } catch (cause) {
   console.error(cause instanceof Error ? cause.message : 'Repository status failed');
