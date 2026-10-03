@@ -87,7 +87,7 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
     if (!map) return;
     const grouped = new Map<string, HeliosItem[]>();
     for (const item of items) grouped.set(item.place_label, [...(grouped.get(item.place_label) ?? []), item]);
-    const markerGroups = selectedId ? items.map((item) => [item]) : [...grouped.values()];
+    const markerGroups = selectedId ? items.filter((item) => item.id === selectedId).map((item) => [item]) : [...grouped.values()];
     markersRef.current = markerGroups.map((group) => {
       const clustered = group.length > 1;
       const item = clustered ? { ...group[0],
