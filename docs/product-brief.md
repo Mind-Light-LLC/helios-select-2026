@@ -28,6 +28,8 @@ The local demo includes nine global catalog paths and 15 manually reviewed San F
 
 Every agent record includes an official source URL and check time, map coordinates with pin meaning, a shareable globe `view_url`, schedule text when available, explicit availability status, and a typed next action with a provider-specific note. `not_started` means Helios has not performed an external action. `provider_confirmation` means a provider receipt is needed before claiming completion. `describe_catalog` reports the limited country coverage so agents can distinguish an empty catalog match from no opportunity existing.
 
+The Connect agents panel makes real MCP requests from two named clients. The discovery client rejects the wrong Lakewood date and passes the returned record ID to the evidence client, which reads the same source and official action. This is a deterministic handoff, not autonomous agent collaboration or provider action.
+
 ## System
 
 ```mermaid

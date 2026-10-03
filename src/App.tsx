@@ -248,7 +248,7 @@ export default function App() {
         {!error && items.length > 0 && <p className="sheet-foot">{donationSearch ? 'Donate only on the organization’s official site.' : 'Confirm availability with the organization.'}</p>}
       </aside>}
 
-      {selected && !needsOpen && <OpportunityDetail key={selected.id} item={selected} fit={fit}
+      {selected && !needsOpen && !agentOpen && <OpportunityDetail key={selected.id} item={selected} fit={fit}
         mcpHandoff={mcpHandoffId === selected.id}
         reasonCodes={reasonCodes} closeRef={detailCloseRef} onClose={() => setSelectedId(null)} onAccount={() => setAccountOpen(true)} />}
 
@@ -267,7 +267,7 @@ export default function App() {
         <span className="command-hint">Sourced needs. Clear action state.</span>
       </div>
 
-      {agentOpen && <AgentWorkbench selectedId={selectedId} onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
+      {agentOpen && <AgentWorkbench onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
       {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); setVoiceStartRequest((value) => value + 1); }} />}
       {needsOpen && <NeedHub selectedId={needId} onSelect={setNeedId} onClose={() => setNeedsOpen(false)}
         onAccount={() => setAccountOpen(true)} onVoice={() => setVoiceStartRequest((value) => value + 1)}

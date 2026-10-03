@@ -9,7 +9,7 @@ export type { OfferAssessment, SourcedNeed } from '../needData';
 export type { NeedView, PartnerNeed } from '../needData';
 export { loadAuthConfig, getAuthClient } from './authClient';
 export type { AuthConfig } from './authClient';
-export { agentSearch, agentDetail } from './mcpClient';
+export { agentSearch, agentDetail, connectAgentClient } from './mcpClient';
 export type { AgentRecord, AgentSearch, AgentDetail } from './mcpClient';
 export { listSavedActions, saveAccountAction, savedActionsEvent } from './savedActions';
 export type { SavedAction } from './savedActions';

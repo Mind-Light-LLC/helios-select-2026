@@ -43,7 +43,7 @@ function isRecord(value: unknown): value is AgentRecord {
     && typeof value.next_action.state === 'string';
 }
 
-function parseMcpResponse(body: string): unknown {
+function parseMcpResponse(body: string): Record<string, unknown> {
   const data = body.split(/\r?\n/).filter((line) => line.startsWith('data: '))
     .map((line) => line.slice(6)).join('\n');
   const envelope: unknown = JSON.parse(data || body);
@@ -55,21 +55,42 @@ function parseMcpResponse(body: string): unknown {
     const content = Array.isArray(result.content) ? result.content[0] : null;
     throw new Error(isObject(content) ? String(content.text ?? 'MCP tool failed.') : 'MCP tool failed.');
   }
-  if (!isObject(result.structuredContent)) throw new Error('The MCP tool returned no structured content.');
-  return result.structuredContent;
+  return result;
 }
 
-async function callMcp(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+async function requestMcp(method: string, params: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
   const response = await fetch('/api/mcp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: crypto.randomUUID(), method: 'tools/call',
-      params: { name, arguments: args } }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: crypto.randomUUID(), method, params }),
     signal,
     cache: 'no-store',
   });
   if (!response.ok) throw new Error(`MCP request failed (${response.status}).`);
   return parseMcpResponse(await response.text());
+}
+
+async function callMcp(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+  const result = await requestMcp('tools/call', { name, arguments: args }, signal);
+  if (!isObject(result.structuredContent)) throw new Error('The MCP tool returned no structured content.');
+  return result.structuredContent;
+}
+
+export async function connectAgentClient(name: string): Promise<{
+  name: string;
+  search: typeof agentSearch;
+  detail: typeof agentDetail;
+}> {
+  await requestMcp('initialize', {
+    protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name, version: '0.1.0' },
+  });
+  const listed = await requestMcp('tools/list', {});
+  const available = listed.tools;
+  if (!Array.isArray(available) || !['search_opportunities', 'get_opportunity'].every((required) =>
+    available.some((entry: unknown) => isObject(entry) && entry.name === required))) {
+    throw new Error(`${name} could not discover the required MCP tools.`);
+  }
+  return { name, search: agentSearch, detail: agentDetail };
 }
 
 export async function agentSearch(query: string, signal?: AbortSignal): Promise<AgentSearch> {
