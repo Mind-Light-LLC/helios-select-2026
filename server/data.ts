@@ -2,6 +2,7 @@ import type { CardDetails, HeliosItem, SearchOptions, SearchResponse } from '../
 import { classifyCandidates } from './bedrock-match.js';
 import { parseCardDetails } from './card-details.js';
 import { readGeminiEmbedding } from './gemini-embedding.js';
+import { paidAiEnabled } from './paid-ai.js';
 import { feasibleItems } from '../src/feasibleMatch.js';
 import { sfCatalog } from '../src/sfCatalog.js';
 import { globalCatalog } from '../src/globalCatalog.js';
@@ -84,6 +85,7 @@ export async function getCardDetails(id: string): Promise<CardDetails | null> {
 }
 
 async function queryEmbedding(query: string): Promise<number[] | null> {
+  if (!paidAiEnabled()) return null;
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
   const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:embedContent', {
@@ -159,7 +161,7 @@ export async function searchItems(query: string, options: SearchOptions = {}): P
     return { ...responseBase, items, mode: 'keyword', fit: items.length ? 'record_match' : 'no_match',
       reason_codes: items.length ? ['availability_unconfirmed'] : ['no_relevant_record'] };
   }
-  if (process.env.HELIOS_BEDROCK_MODEL_ID) {
+  if (paidAiEnabled() && process.env.HELIOS_BEDROCK_MODEL_ID) {
     try {
       const match = await classifyCandidates(query, eligible);
       if (match) return {
