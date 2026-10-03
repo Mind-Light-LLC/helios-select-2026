@@ -1,9 +1,11 @@
 import type { HeliosItem } from './types.js';
 import { item } from './globalRecord.js';
 import { expandedGlobalCatalog } from './globalCatalogExpansion.js';
+import { moreGlobalCatalog } from './globalCatalogMore.js';
 
 export const globalCatalog: HeliosItem[] = [
   ...expandedGlobalCatalog,
+  ...moreGlobalCatalog,
   item({
     id: 'dcck-klein-center-volunteer', record_kind: 'volunteer', title: 'Prepare community meals in Washington',
     source_checked_at: '2026-10-03T21:00:00Z',

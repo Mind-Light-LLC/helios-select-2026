@@ -2,17 +2,16 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { loadCatalog, searchCatalog } from '@api';
 import { Globe } from './Globe';
 import { VoiceControl } from './VoiceControl';
-import { BrowserVoiceAgent } from './BrowserVoiceAgent';
 import { NeedHub } from './NeedHub';
 import { AuthPanel } from './AuthPanel';
 import { OpportunityDetail } from './OpportunityDetail';
-import { OrganizationMark } from './OrganizationMark';
+import { SearchResults } from './SearchResults';
 import { AgentWorkbench } from './AgentWorkbench';
 import { GuidePanel } from './GuidePanel';
-import { isCurrentReview } from './sfSearch';
 import type { HeliosItem, MatchReason, SearchResponse } from './types';
 import type { VoiceActivity } from './voiceActivity';
 import { useHoldToTalk } from './useHoldToTalk';
+import { useMapFocus } from './useMapFocus';
 
 const exampleQueries = [
   'Where can I volunteer this Sunday?',
@@ -22,28 +21,21 @@ const exampleQueries = [
   'How can I help from anywhere?',
 ];
 
-function matchDetail(mode: SearchResponse['mode'] | null, fit: SearchResponse['fit'], reasons: MatchReason[], count: number, query: string): string {
-  if (reasons.includes('location_unknown')) return 'Place unknown. Name a city or country.';
-  if (reasons.includes('location_mismatch') && count === 0) return 'No sourced record in that place.';
-  if (reasons.includes('eligibility_unverified')) return 'Eligibility unknown from these sources.';
-  if (reasons.includes('availability_unconfirmed') && count === 0) return 'No confirmed opening in this catalog.';
-  if (reasons.includes('schedule_unverified') && count === 0) return 'Timing unknown from these sources.';
-  if (reasons.includes('date_mismatch') && count === 0) return 'No sourced record on that date.';
-  if (fit === 'no_match' || count === 0) return 'No match in this catalog';
-  if (mode === null) return 'Browse the catalog';
-  if (/\$\s*\d+|\bdonat\w*\b|\bdollars?\b/i.test(query)) return 'Official donation paths. Check the amount on each organization’s site.';
-  if (reasons.includes('location_mismatch')) return 'Place differs from your request';
-  if (reasons.includes('date_mismatch') || reasons.includes('schedule_mismatch')) return 'Timing differs from your request';
-  if (fit === 'related_path') return 'Related path. Check the details.';
-  if (reasons.includes('availability_unconfirmed')) return 'Sourced path. Confirm an open spot with the organization.';
-  if (mode === 'keyword') return 'Text match. Check place and timing.';
-  return 'Sourced path to explore';
+function addUnseenCatalog(current: HeliosItem[], response: SearchResponse): HeliosItem[] {
+  const known = new Set(current.map((item) => item.id));
+  const additions = [...response.items, ...(response.alternatives ?? []).map(({ item }) => item)]
+    .filter((item) => !known.has(item.id));
+  return additions.length ? [...current, ...additions] : current;
 }
 
 export default function App() {
   const [query, setQuery] = useState('');
   const [exampleIndex, setExampleIndex] = useState(0);
   const [items, setItems] = useState<HeliosItem[]>([]);
+  const [catalogItems, setCatalogItems] = useState<HeliosItem[]>([]);
+  const [alternatives, setAlternatives] = useState<NonNullable<SearchResponse['alternatives']>>([]);
+  const [nextStep, setNextStep] = useState<string | null>(null);
+  const { focus: mapFocus, notice: mapNotice, focusQuery, focusWorld } = useMapFocus(catalogItems);
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('item'));
   const [catalogCount, setCatalogCount] = useState(0);
   const [mode, setMode] = useState<SearchResponse['mode'] | null>(null);
@@ -68,8 +60,13 @@ export default function App() {
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const resultRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const returnFocusIdRef = useRef<string | null>(selectedId);
-  const selected = items.find((item) => item.id === selectedId) ?? null;
-  const donationSearch = /\$\s*\d+|\bdonat\w*\b|\bdollars?\b/i.test(query);
+  const selected = catalogItems.find((item) => item.id === selectedId) ?? items.find((item) => item.id === selectedId) ?? null;
+
+  function startVoice() {
+    if (!voiceAvailable) { setVoiceNotice(import.meta.env.DEV ? 'OpenAI voice needs the local API. Run vercel dev alongside this preview.' : 'OpenAI voice is unavailable right now.'); return; }
+    setVoiceNotice(null);
+    setVoiceStartRequest((value) => value + 1);
+  }
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -83,6 +80,7 @@ export default function App() {
     loadCatalog(controller.signal).then((response) => {
       if (controller.signal.aborted) return;
       setItems(response.items);
+      setCatalogItems(response.items);
       setSelectedId((current) => current && response.items.some((item) => item.id === current) ? current : null);
       setCatalogCount(response.catalog_count);
       setVoiceAvailable(response.voice_available);
@@ -123,6 +121,9 @@ export default function App() {
 
   const acceptSearch = useCallback((response: SearchResponse) => {
     setItems(response.items);
+    setAlternatives(response.alternatives ?? []);
+    setNextStep(response.next_step ?? null);
+    setCatalogItems((current) => addUnseenCatalog(current, response));
     setCatalogCount(response.catalog_count);
     setMode(response.mode);
     setFit(response.fit);
@@ -146,6 +147,7 @@ export default function App() {
     setResultsOpen(true);
     setSelectedId(null);
     setQuery(trimmed);
+    focusQuery(trimmed);
     try {
       const response = await searchCatalog(trimmed, {}, controller.signal);
       if (!controller.signal.aborted) acceptSearch(response);
@@ -157,7 +159,7 @@ export default function App() {
         setBusy(false);
       }
     }
-  }, [acceptSearch]);
+  }, [acceptSearch, focusQuery]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -177,6 +179,10 @@ export default function App() {
       const response = await loadCatalog(controller.signal);
       if (controller.signal.aborted) return;
       setItems(response.items);
+      setCatalogItems(response.items);
+      setAlternatives([]);
+      setNextStep(null);
+      focusWorld();
       setCatalogCount(response.catalog_count);
       setVoiceAvailable(response.voice_available);
       setMode(null);
@@ -195,13 +201,15 @@ export default function App() {
     }
   };
 
-  const acceptVoiceSearch = (response: SearchResponse) => {
+  const acceptVoiceSearch = (response: SearchResponse, spokenQuery: string) => {
     setNeedsOpen(false);
     setAgentOpen(false);
     setAccountOpen(false);
     requestRef.current?.abort();
     requestRef.current = null;
     setBusy(false);
+    setQuery(spokenQuery);
+    focusQuery(spokenQuery);
     acceptSearch(response);
   };
 
@@ -224,7 +232,7 @@ export default function App() {
 
   return <div className="app-shell">
     <main className="atlas-stage">
-      <Globe items={items} selectedId={selectedId} onSelect={focusItem} onExplore={(place) => place ? void runSearch(`Show organizations in ${place}`) : setResultsOpen(true)} />
+      <Globe items={catalogItems} selectedId={selectedId} focus={mapFocus} onSelect={focusItem} onExplore={(place) => place ? void runSearch(`Show organizations in ${place}`) : setResultsOpen(true)} />
       <header className="topbar">
         <a className="wordmark" href="/" aria-label="Helios home"><img src="/brand/helios-mark.svg" alt="" /><span>HELIOS</span></a>
         <nav className="top-actions" aria-label="Explore HeliOS">
@@ -238,27 +246,14 @@ export default function App() {
       {!resultsOpen && !selected && !needsOpen && <div className="hero-copy">
         <p>THE HELIOS ATLAS</p>
         <h1>Find a way<br />to help.</h1>
-        <div className="hero-actions"><button className="hero-voice-cta" type="button" onClick={() => setVoiceStartRequest((value) => value + 1)}>Talk to HeliOS <span aria-hidden="true">↗</span></button>
+        <div className="hero-actions"><button className="hero-voice-cta" type="button" onClick={startVoice}>Talk to HeliOS <span aria-hidden="true">↗</span></button>
           <button className="hero-guide-cta" type="button" onClick={() => setGuideOpen(true)}>How it works</button></div>
       </div>}
 
-      {(resultsOpen || error) && !selected && !needsOpen && !accountOpen && <aside className={`results-sheet ${error || (!busy && items.length < 4) ? 'is-compact' : ''}`} aria-label="Sourced opportunities">
-        <div className="sheet-heading">
-          <div><span className="sheet-kicker">{mode ? 'SEARCH RESULTS' : 'EXPLORE'}</span><h2>{mode ? 'Places to explore' : 'Sourced places'}</h2></div>
-          <button type="button" onClick={() => { setResultsOpen(false); setError(null); }} aria-label="Close results">×</button>
-        </div>
-        <p className="sheet-status" role="status">{busy ? 'Searching sourced records…' : error ? 'Catalog unavailable' : matchDetail(mode, fit, reasonCodes, items.length, query)} <span>{!busy && !error ? `${items.length} / ${catalogCount}` : ''}</span></p>
-        {error && <p className="sheet-error" role="alert">{error}</p>}
-        {!busy && !error && items.length === 0 && <p className="sheet-empty">Try another place, cause, or date. This catalog is still small.</p>}
-        <div className="result-list">
-          {!busy && !error && items.map((item) => <button type="button" className={`result-row ${selectedId === item.id ? 'is-selected' : ''}`} key={item.id} ref={(node) => { if (node) resultRefs.current.set(item.id, node); else resultRefs.current.delete(item.id); }} onClick={() => focusItem(item.id)}>
-            <OrganizationMark item={item} />
-            <span className="result-main"><strong>{item.title}</strong><small>{donationSearch ? `${item.organization_name} · ${item.donation_minimum_usd === 10 && isCurrentReview(item) ? '$10 minimum verified' : 'Check gift amount'}` : `${item.organization_name} · ${item.country}`}</small></span>
-            <span className="result-chevron" aria-hidden="true">›</span>
-          </button>)}
-        </div>
-        {!error && items.length > 0 && <p className="sheet-foot">{donationSearch ? 'Donate only on the organization’s official site.' : 'Confirm availability with the organization.'}</p>}
-      </aside>}
+      {(resultsOpen || error) && !selected && !needsOpen && !accountOpen && <SearchResults items={items}
+        alternatives={alternatives} nextStep={nextStep} mode={mode} fit={fit} reasons={reasonCodes}
+        count={catalogCount} query={query} busy={busy} error={error} mapNotice={mapNotice} selectedId={selectedId} resultRefs={resultRefs}
+        onClose={() => { setResultsOpen(false); setError(null); }} onSelect={focusItem} />}
 
       {selected && !needsOpen && !agentOpen && !accountOpen && <OpportunityDetail key={selected.id} item={selected} fit={fit}
         mcpHandoff={mcpHandoffId === selected.id}
@@ -272,17 +267,15 @@ export default function App() {
             {!query && <span className="search-example" key={exampleIndex} aria-hidden="true">{exampleQueries[exampleIndex]}</span>}</span>
           <button type="submit" className="search-submit" disabled={busy || !query.trim()} aria-label="Search opportunities">↗</button>
           <span className="dock-divider" aria-hidden="true" />
-          {voiceAvailable
-            ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} onUnavailable={() => setVoiceAvailable(false)} />
-            : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} onExploreNeeds={() => { setNeedsOpen(true); setAgentOpen(false); setAccountOpen(false); }} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />}
+          <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={[...items, ...alternatives.map(({ item }) => item)]} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
         </form>
-        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'listening' ? 'Listening' : voiceActivity === 'speaking' ? 'Helios is speaking' : 'Hold Space to talk · Tap the mic for conversation')}</span>
+        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'connecting' ? 'Connecting HeliOS voice…' : voiceActivity === 'listening' ? 'Listening to you' : voiceActivity === 'speaking' ? 'Helios is speaking' : voiceActivity === 'hold-ready' ? 'Hold Option to speak · Tap the mic to stop' : voiceActivity === 'ready' ? 'Speak to HeliOS · Tap the mic to stop' : voiceAvailable ? 'Hold Option to talk · Tap the mic for conversation' : 'OpenAI voice unavailable in this preview')}</span>
       </div>
 
       {agentOpen && <AgentWorkbench onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
-      {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); setVoiceStartRequest((value) => value + 1); }} />}
+      {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); startVoice(); }} />}
       {needsOpen && !accountOpen && <NeedHub selectedId={needId} onSelect={setNeedId} onClose={() => setNeedsOpen(false)}
-        onAccount={() => setAccountOpen(true)} onVoice={() => setVoiceStartRequest((value) => value + 1)}
+        onAccount={() => setAccountOpen(true)} onVoice={startVoice}
         voiceAvailable={voiceAvailable} spokenOffer={spokenOffer} />}
       {accountOpen && <AuthPanel onClose={() => setAccountOpen(false)} />}
     </main>

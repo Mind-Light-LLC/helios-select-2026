@@ -1,29 +1,23 @@
 .atlas-stage { background: #020a16; }
+.marker-badge.marker-monogram, .organization-mark.is-monogram { color: var(--mark-ink); background: var(--mark-bg); }
+.marker-badge.is-dark-logo, .organization-mark.is-dark-logo { background: #14364a; border-color: #d8e5df; }
+[data-mark-tone="0"] { --mark-ink: #fff; --mark-bg: #246d62; }
+[data-mark-tone="1"] { --mark-ink: #fff; --mark-bg: #976126; }
+[data-mark-tone="2"] { --mark-ink: #fff; --mark-bg: #486995; }
+[data-mark-tone="3"] { --mark-ink: #fff; --mark-bg: #895268; }
+[data-mark-tone="4"] { --mark-ink: #fff; --mark-bg: #2b6d87; }
+[data-mark-tone="5"] { --mark-ink: #fff; --mark-bg: #777026; }
+[data-mark-tone="6"] { --mark-ink: #fff; --mark-bg: #5d5c95; }
+[data-mark-tone="7"] { --mark-ink: #fff; --mark-bg: #527840; }
 .globe-frame::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: .73;
-  background-image:
-    radial-gradient(1px 1px at 5% 14%, #ffffffca 98%, transparent),
-    radial-gradient(1px 1px at 14% 72%, #c9e5ffbe 98%, transparent),
-    radial-gradient(2px 2px at 20% 31%, #fff7dbb8 98%, transparent),
-    radial-gradient(1px 1px at 29% 11%, #ffffffbc 98%, transparent),
-    radial-gradient(1px 1px at 31% 84%, #cedfffb0 98%, transparent),
-    radial-gradient(1px 1px at 37% 58%, #ffffff7f 98%, transparent),
-    radial-gradient(2px 2px at 46% 7%, #fff6d6bc 98%, transparent),
-    radial-gradient(1px 1px at 56% 87%, #d8e9ffbd 98%, transparent),
-    radial-gradient(1px 1px at 64% 14%, #e9f2ff9c 98%, transparent),
-    radial-gradient(2px 2px at 73% 69%, #fff1d6b8 98%, transparent),
-    radial-gradient(1px 1px at 80% 22%, #f8ffffba 98%, transparent),
-    radial-gradient(1px 1px at 86% 81%, #c9e8ffaf 98%, transparent),
-    radial-gradient(2px 2px at 93% 42%, #fff7ddaa 98%, transparent),
-    radial-gradient(1px 1px at 97% 12%, #ffffffad 98%, transparent),
-    radial-gradient(1px 1px at 10% 91%, #ffffff98 98%, transparent),
-    radial-gradient(1px 1px at 78% 95%, #ffffffa0 98%, transparent);
-  mask-image: radial-gradient(ellipse 37% 54% at 53% 51%, transparent 73%, #000 96%);
+  background: url('/brand/space-stars.svg') center / cover no-repeat;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
+  mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
 }
 .globe-frame::after {
   z-index: 2;
@@ -50,7 +44,11 @@
   mask-image: conic-gradient(from 180deg, transparent, #0003 70deg, #000 125deg, #000d 225deg, #0002 305deg, transparent);
 }
 .globe-frame[data-halo-ready='true'] .globe-halo { opacity: 1; }
-.globe-canvas canvas { filter: none; }
+.globe-canvas canvas { filter: brightness(1.08) contrast(1.03) saturate(1.06); }
+.globe-marker { width: 48px; height: 48px; pointer-events: none; }
+.marker-badge { width: 36px; height: 36px; pointer-events: auto; }
+.marker-label { top: 48px; }
+.organization-mark { width: 45px; height: 45px; }
 .imagery-credit { background: #020a16aa; }
 .command-zone { left: 50%; bottom: 29px; width: min(675px, calc(100vw - 60px)); transform: translateX(-50%); }
 .command-dock { background: linear-gradient(110deg, #f8faf2f2, #e4f1f0e9); box-shadow: inset 0 1px 1px #fff, 0 24px 75px #010713c9, 0 0 0 1px #fff7; }
@@ -88,7 +86,16 @@
   .agent-window { max-height: calc(100svh - 220px); }
 }
 @media (max-width: 760px) {
+  .globe-marker { width: 44px; height: 44px; }
+  .marker-badge { width: 34px; height: 34px; }
+  .marker-label { top: 44px; }
+  .globe-canvas { top: 140px; bottom: -140px; }
+  .globe-halo { top: calc(50% + 140px); }
+  .globe-frame::before {
+    -webkit-mask-image: radial-gradient(circle at 50% calc(50% + 140px), transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
+    mask-image: radial-gradient(circle at 50% calc(50% + 140px), transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
+  }
+  .maplibregl-ctrl-top-right { top: 4px; }
   .command-zone { left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; transform: none; }
   .agent-window { top: 70px; max-height: calc(100svh - 160px); }
-  .globe-frame::before { mask-image: radial-gradient(ellipse 61% 42% at 50% 48%, transparent 76%, #000 98%); }
 }

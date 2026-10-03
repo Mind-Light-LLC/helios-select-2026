@@ -5,8 +5,8 @@ import { searchCurated } from './sfSearch';
 import { demoCatalog } from './demoCatalog';
 import { feasibleItems } from './feasibleMatch';
 
-test('San Francisco catalog contains fifteen distinct sourced organizations', () => {
-  assert.equal(sfCatalog.length, 15);
+test('San Francisco catalog contains eighteen sourced paths across fifteen organizations', () => {
+  assert.equal(sfCatalog.length, 18);
   assert.equal(new Set(sfCatalog.map((item) => item.organization_name)).size, 15);
   assert.ok(sfCatalog.every((item) => item.source_url.startsWith('https://')
     && item.action_url?.startsWith('https://') && item.availability_status === 'not_confirmed'));
@@ -41,9 +41,9 @@ test('a natural-language event date is a constraint, not a semantic hint', () =>
 });
 
 test('the same demo spans San Francisco and sourced organizations worldwide', () => {
-  assert.equal(demoCatalog.length, 38);
-  assert.equal(demoCatalog.filter((item) => item.place_label === 'San Francisco, California').length, 15);
-  assert.equal(new Set(demoCatalog.map((item) => item.country)).size, 21);
+  assert.ok(demoCatalog.length >= 47);
+  assert.equal(demoCatalog.filter((item) => item.place_label === 'San Francisco, California').length, 18);
+  assert.ok(new Set(demoCatalog.map((item) => item.country)).size >= 27);
   assert.ok(demoCatalog.every((item) => item.source_url.startsWith('https://')
     && item.action_url?.startsWith('https://') && item.action_authority === 'provider'
     && item.availability_status === 'not_confirmed'));

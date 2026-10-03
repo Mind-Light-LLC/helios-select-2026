@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { HeliosItem } from './types';
-import { organizationLogoPath, organizationMonogram } from './organizationBrand';
+import type { MapFocus } from './mapFocus';
+import { globeMarkerGroups } from './globeMarkerGroups';
+import { organizationBadgeTone, organizationLogoNeedsDarkBackground, organizationLogoPath, organizationMonogram } from './organizationBrand';
 import { shadeTile, shadeTileTemplate } from './solarShade';
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -36,10 +38,11 @@ const earthStyle: maplibregl.StyleSpecification = {
   layers: [{
     id: 'earth', type: 'raster', source: 'earth',
     paint: {
-      'raster-brightness-min': 0.11,
-      'raster-brightness-max': 0.98,
-      'raster-contrast': -0.04,
-      'raster-saturation': 0.08,
+      'raster-brightness-min': 0.07,
+      'raster-brightness-max': 1,
+      'raster-contrast': 0.08,
+      'raster-saturation': 0.3,
+      'raster-fade-duration': 350,
     },
   },
     { id: 'shade', type: 'raster', source: 'shade', paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } }],
@@ -56,16 +59,21 @@ const earthStyle: maplibregl.StyleSpecification = {
 type Props = {
   items: HeliosItem[];
   selectedId: string | null;
+  focus: MapFocus | null;
   onSelect: (id: string) => void;
   onExplore: (place?: string) => void;
 };
 
-export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
+export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const callbacksRef = useRef({ onSelect, onExplore });
   const [error, setError] = useState<string | null>(null);
+  const [worldMarkers, setWorldMarkers] = useState(true);
+
+  useEffect(() => { callbacksRef.current = { onSelect, onExplore }; }, [onSelect, onExplore]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -97,6 +105,8 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       };
       map.on('move', updateHalo);
       map.on('resize', updateHalo);
+      const updateMarkerZoom = () => setWorldMarkers(map.getZoom() < 2.5);
+      map.on('zoomend', updateMarkerZoom);
       updateHalo();
       const solarRefresh = window.setInterval(() => {
         const source = map.getSource('shade') as maplibregl.RasterTileSource | undefined;
@@ -106,6 +116,7 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       return () => {
         map.off('move', updateHalo);
         map.off('resize', updateHalo);
+        map.off('zoomend', updateMarkerZoom);
         window.clearInterval(solarRefresh);
         markersRef.current.forEach((marker) => marker.remove());
         markersRef.current = [];
@@ -122,30 +133,49 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
     markersRef.current = [];
     const map = mapRef.current;
     if (!map) return;
-    const grouped = new Map<string, HeliosItem[]>();
-    for (const item of items) grouped.set(item.place_label, [...(grouped.get(item.place_label) ?? []), item]);
-    const markerGroups = selectedId ? items.filter((item) => item.id === selectedId).map((item) => [item]) : [...grouped.values()];
-    markersRef.current = markerGroups.map((group) => {
+    const markerGroups = globeMarkerGroups(items, worldMarkers).flatMap(({ items: group, nearby }) => {
+      const selected = group.find((item) => item.id === selectedId);
+      if (!selected) return [{ group, nearby }];
+      const others = group.filter((item) => item.id !== selectedId);
+      return others.length ? [{ group: others, nearby }, { group: [selected], nearby: false }] : [{ group, nearby: false }];
+    });
+    markersRef.current = markerGroups.map(({ group, nearby }) => {
       const clustered = group.length > 1;
+      const isSelected = group.some((entry) => entry.id === selectedId);
       const item = clustered ? { ...group[0],
         longitude: group.reduce((sum, entry) => sum + entry.longitude, 0) / group.length,
         latitude: group.reduce((sum, entry) => sum + entry.latitude, 0) / group.length,
       } : group[0];
       const markerElement = document.createElement('button');
       markerElement.type = 'button';
-      markerElement.className = `globe-marker ${item.record_kind === 'event' ? 'is-event' : ''} ${item.id === selectedId ? 'is-selected' : ''}`;
-      markerElement.setAttribute('aria-label', clustered ? `Show ${group.length} ${item.place_label} opportunities` : `Show ${item.title}`);
-      markerElement.title = clustered ? `${group.length} sourced paths around ${item.place_label}` : item.title;
-      markerElement.addEventListener('click', () => clustered ? onExplore(item.place_label) : onSelect(item.id));
+      markerElement.className = `globe-marker ${item.record_kind === 'event' ? 'is-event' : ''} ${isSelected ? 'is-selected' : ''}`;
+      markerElement.setAttribute('aria-label', nearby ? `Zoom to ${group.length} nearby sourced paths`
+        : clustered ? `Show ${group.length} ${item.place_label} opportunities` : `Show ${item.title}`);
+      markerElement.title = nearby ? `Zoom to ${group.length} nearby sourced paths`
+        : clustered ? `${group.length} sourced paths around ${item.place_label}` : item.title;
+      markerElement.addEventListener('click', () => {
+        if (nearby) map.flyTo({ center: [item.longitude, item.latitude], zoom: Math.max(3.4, map.getZoom() + 1.2),
+          duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1000 });
+        else if (clustered) callbacksRef.current.onExplore(item.place_label);
+        else callbacksRef.current.onSelect(item.id);
+      });
       const badge = document.createElement('span');
       badge.className = 'marker-badge';
       badge.setAttribute('aria-hidden', 'true');
+      badge.dataset.markTone = String(organizationBadgeTone(clustered ? item.place_label : item.id));
       const logoPath = clustered ? null : organizationLogoPath(item.id);
       if (logoPath) {
+        if (organizationLogoNeedsDarkBackground(item.id)) badge.classList.add('is-dark-logo');
         const logo = document.createElement('img');
-        logo.src = logoPath;
         logo.alt = '';
         logo.decoding = 'async';
+        logo.onerror = () => {
+          logo.remove();
+          badge.textContent = organizationMonogram(item);
+          badge.classList.add('marker-monogram');
+          badge.classList.remove('is-dark-logo');
+        };
+        logo.src = logoPath;
         badge.append(logo);
       } else {
         badge.textContent = clustered ? String(group.length) : organizationMonogram(item);
@@ -153,7 +183,8 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       }
       const label = document.createElement('span');
       label.className = 'marker-label';
-      label.textContent = clustered ? `${group.length} sourced paths in ${item.place_label}` : item.organization_name;
+      label.textContent = nearby ? `${group.length} nearby paths · zoom in`
+        : clustered ? `${group.length} sourced paths in ${item.place_label}` : item.organization_name;
       label.setAttribute('aria-hidden', 'true');
       markerElement.append(badge, label);
       return new maplibregl.Marker({ element: markerElement, anchor: 'center', opacityWhenCovered: 0 })
@@ -163,44 +194,71 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
     };
-  }, [items, selectedId, onSelect, onExplore]);
+  }, [items, selectedId, worldMarkers]);
 
   useEffect(() => {
     const item = items.find((entry) => entry.id === selectedId);
     const map = mapRef.current;
-    if (!map) return;
+    const target = item ?? focus;
+    if (!map || !target) return;
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1400;
-    if (!item) {
-      const local = items.length > 0 && items.every((entry) => entry.place_label.startsWith('San Francisco'));
-      if (local) {
-        const longitude = items.reduce((sum, entry) => sum + entry.longitude, 0) / items.length;
-        const latitude = items.reduce((sum, entry) => sum + entry.latitude, 0) / items.length;
-        map.flyTo({ center: [longitude, latitude], zoom: 1.9, duration, essential: true });
-      } else {
-        map.flyTo({ center: [5, 5], zoom: globalZoom(map.getContainer().clientWidth), duration, essential: true });
-      }
-      return;
-    }
-    const frameSelected = (animationDuration: number) => {
+    const frameTarget = (animationDuration: number) => {
       const { clientWidth: width, clientHeight: height } = map.getContainer();
       map.flyTo({
-        center: [item.longitude, item.latitude],
-        zoom: 2.6,
-        offset: selectedCameraOffset(width, height),
+        center: [target.longitude, target.latitude],
+        zoom: item || focus?.scale === 'city' ? 2.6 : focus?.scale === 'country' ? 1.9 : globalZoom(width),
+        offset: !item && focus?.scale === 'world' ? [0, 0] : selectedCameraOffset(width, height),
         duration: animationDuration,
         essential: true,
       });
     };
-    const onResize = () => frameSelected(0);
+    const onResize = () => frameTarget(0);
     map.on('resize', onResize);
-    frameSelected(duration);
+    frameTarget(duration);
     return () => { map.off('resize', onResize); };
-  }, [items, selectedId]);
+  }, [items, selectedId, focus]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || selectedId || focus || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const container = map.getContainer();
+    let lastInteraction = 0;
+    let orbitActive = false;
+    const onOrbitEnd = () => { orbitActive = false; };
+    const pauseOrbit = () => {
+      lastInteraction = Date.now();
+      if (orbitActive) map.stop();
+    };
+    const orbit = () => {
+      if (document.hidden || Date.now() - lastInteraction < 60000 || map.isMoving()) return;
+      const center = map.getCenter();
+      orbitActive = true;
+      map.easeTo({ center: [center.lng + 18, center.lat], duration: 30000, easing: (t) => t });
+    };
+    map.on('moveend', onOrbitEnd);
+    container.addEventListener('pointerdown', pauseOrbit);
+    container.addEventListener('pointermove', pauseOrbit);
+    container.addEventListener('wheel', pauseOrbit, { passive: true });
+    container.addEventListener('keydown', pauseOrbit);
+    const firstOrbit = window.setTimeout(orbit, 3500);
+    const nextOrbit = window.setInterval(orbit, 31000);
+    return () => {
+      window.clearTimeout(firstOrbit);
+      window.clearInterval(nextOrbit);
+      container.removeEventListener('pointerdown', pauseOrbit);
+      container.removeEventListener('pointermove', pauseOrbit);
+      container.removeEventListener('wheel', pauseOrbit);
+      container.removeEventListener('keydown', pauseOrbit);
+      map.stop();
+      map.off('moveend', onOrbitEnd);
+    };
+  }, [selectedId, focus]);
 
   return <div ref={frameRef} className="globe-frame">
     <div ref={containerRef} className="globe-canvas" aria-label="Global map of sourced results" />
     <div className="globe-halo" aria-hidden="true" />
     {error && <div className="globe-error" role="status">{error}</div>}
+    {focus?.source === 'open_meteo' && <a className="place-credit" href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noopener noreferrer">Place lookup: Open-Meteo / GeoNames</a>}
     <a className="imagery-credit" href="https://www.earthdata.nasa.gov/data/tools/global-imagery-browse-services" target="_blank" rel="noopener noreferrer">Earth imagery: NASA GIBS · Blue Marble 2004</a>
   </div>;
 }
