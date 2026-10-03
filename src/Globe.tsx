@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { HeliosItem } from './types';
-import { organizationLogoPath, organizationMonogram } from './organizationBrand';
+import { organizationBadgeTone, organizationLogoPath, organizationMonogram } from './organizationBrand';
 import { shadeTile, shadeTileTemplate } from './solarShade';
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -140,12 +140,18 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       const badge = document.createElement('span');
       badge.className = 'marker-badge';
       badge.setAttribute('aria-hidden', 'true');
+      badge.dataset.markTone = String(organizationBadgeTone(clustered ? item.place_label : item.id));
       const logoPath = clustered ? null : organizationLogoPath(item.id);
       if (logoPath) {
         const logo = document.createElement('img');
-        logo.src = logoPath;
         logo.alt = '';
         logo.decoding = 'async';
+        logo.onerror = () => {
+          logo.remove();
+          badge.textContent = organizationMonogram(item);
+          badge.classList.add('marker-monogram');
+        };
+        logo.src = logoPath;
         badge.append(logo);
       } else {
         badge.textContent = clustered ? String(group.length) : organizationMonogram(item);
