@@ -13,7 +13,7 @@ This is an original project built for the Supabase Select 2026 Hackathon. It is 
 | Surface | Current behavior |
 | --- | --- |
 | Globe and search | 47 sourced paths across 27 country labels, with source dates and official next steps. All pins remain on the globe after a search; nearby pins group at world scale and split when zoomed. An empty match offers sourced alternatives when available. |
-| HeliOS voice | OpenAI Realtime conversation in the bottom search dock, with no voice popup. Hold Option to speak or tap the mic for a conversation. HeliOS waits for the person to speak, answers freely in their chosen language, and uses English search terms internally. The dock glows cyan while listening and amber while HeliOS speaks. Voice runs only where the server enables it. |
+| HeliOS voice | OpenAI Realtime conversation in the bottom search dock, with no voice popup. Hold Option to speak or tap the mic for a conversation. HeliOS waits for the person to speak, aims to answer in their chosen language, and uses English search terms internally. The dock glows cyan while listening and amber while HeliOS speaks. Voice runs only where the server enables it. |
 | Agent handoff | A read-only MCP and JSON interface exposes the same records, source links, publication state, and action authority. |
 | External outcomes | Official partner links are handoffs. HeliOS does not submit, book, donate, or claim an outcome without a provider receipt. |
 

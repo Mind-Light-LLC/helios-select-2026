@@ -8,7 +8,7 @@ export const voiceTools = [
       query: { type: 'string', description: 'Full search intent in English for catalog matching. Translate any weekday and search terms, and keep the named place and date.' },
       place: { type: 'string', description: 'City or country the person named, including earlier turns. Use its English name when needed for matching. Empty only when no place is known.' },
       reply_language: { type: 'string', description: 'Language of the person’s latest complete request, such as Spanish or English. Never infer it from accent alone.' },
-      country: { type: 'string', description: 'Exact country filter only when the person named a country.' },
+      country: { type: 'string', description: 'English catalog country name only when the person explicitly named a country.' },
     }, required: ['query', 'place', 'reply_language'] },
   },
   {
