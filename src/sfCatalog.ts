@@ -1,4 +1,4 @@
-import type { HeliosItem } from './types';
+import type { HeliosItem } from './types.js';
 
 type SfRecord = Pick<HeliosItem, 'id' | 'title' | 'summary' | 'organization_name' | 'source_url'
   | 'action_url' | 'action_kind' | 'action_label' | 'action_note' | 'schedule_text'>

@@ -1,4 +1,4 @@
-import type { HeliosItem } from './types';
+import type { HeliosItem } from './types.js';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { CardDetails } from '../src/types';
+import type { CardDetails } from '../src/types.js';
 
 const sourceCheck = z.object({
   url: z.url(),

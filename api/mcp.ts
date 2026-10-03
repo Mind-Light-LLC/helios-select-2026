@@ -2,7 +2,7 @@ import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { getCardDetails, listCatalog, searchItems } from '../server/data.js';
 import { searchInput } from '../server/search-input.js';
-import type { HeliosItem } from '../src/types';
+import type { HeliosItem } from '../src/types.js';
 import { assessOffer, sourcedNeeds } from '../src/needData.js';
 import { listPartnerNeeds } from '../server/needs.js';
 import { isCurrentReview } from '../src/sfSearch.js';

@@ -1,4 +1,4 @@
-import type { CardDetails, HeliosItem, SearchOptions, SearchResponse } from '../src/types';
+import type { CardDetails, HeliosItem, SearchOptions, SearchResponse } from '../src/types.js';
 import { classifyCandidates } from './bedrock-match.js';
 import { parseCardDetails } from './card-details.js';
 import { readGeminiEmbedding } from './gemini-embedding.js';
