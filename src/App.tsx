@@ -11,6 +11,8 @@ import { AgentWorkbench } from './AgentWorkbench';
 import { GuidePanel } from './GuidePanel';
 import { isCurrentReview } from './sfSearch';
 import type { HeliosItem, MatchReason, SearchResponse } from './types';
+import type { VoiceActivity } from './voiceActivity';
+import { useHoldToTalk } from './useHoldToTalk';
 
 const exampleQueries = [
   'Where can I volunteer this Sunday?',
@@ -57,6 +59,9 @@ export default function App() {
   const [needsOpen, setNeedsOpen] = useState(() => Boolean(new URLSearchParams(window.location.search).get('need')));
   const [spokenOffer, setSpokenOffer] = useState<{ text: string } | null>(null);
   const [voiceStartRequest, setVoiceStartRequest] = useState(0);
+  const [voiceActivity, setVoiceActivity] = useState<VoiceActivity>('idle');
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+  const holdToTalk = useHoldToTalk();
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
@@ -122,7 +127,8 @@ export default function App() {
     setMode(response.mode);
     setFit(response.fit);
     setReasonCodes(response.reason_codes ?? []);
-    setSelectedId(response.mode === 'keyword' ? null : response.items[0]?.id ?? null);
+    const singleRecordMatch = response.items.length === 1 && response.fit === 'record_match';
+    setSelectedId(response.mode === 'keyword' && !singleRecordMatch ? null : response.items[0]?.id ?? null);
     setResultsOpen(true);
     setError(null);
   }, []);
@@ -132,11 +138,13 @@ export default function App() {
     if (!trimmed) return;
     setNeedsOpen(false);
     setAgentOpen(false);
+    setAccountOpen(false);
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
     setBusy(true);
     setResultsOpen(true);
+    setSelectedId(null);
     setQuery(trimmed);
     try {
       const response = await searchCatalog(trimmed, {}, controller.signal);
@@ -159,6 +167,7 @@ export default function App() {
   const showAll = async () => {
     setNeedsOpen(false);
     setAgentOpen(false);
+    setAccountOpen(false);
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
@@ -189,6 +198,7 @@ export default function App() {
   const acceptVoiceSearch = (response: SearchResponse) => {
     setNeedsOpen(false);
     setAgentOpen(false);
+    setAccountOpen(false);
     requestRef.current?.abort();
     requestRef.current = null;
     setBusy(false);
@@ -198,6 +208,7 @@ export default function App() {
   const focusItem = (id: string) => {
     setNeedsOpen(false);
     setAgentOpen(false);
+    setAccountOpen(false);
     returnFocusIdRef.current = id;
     setSelectedId(id);
     setResultsOpen(true);
@@ -207,6 +218,7 @@ export default function App() {
     setSpokenOffer(offer ? { text: offer } : null);
     setNeedId(id);
     setAgentOpen(false);
+    setAccountOpen(false);
     setNeedsOpen(true);
   };
 
@@ -217,9 +229,9 @@ export default function App() {
         <a className="wordmark" href="/" aria-label="Helios home"><img src="/brand/helios-mark.svg" alt="" /><span>HELIOS</span></a>
         <nav className="top-actions" aria-label="Explore HeliOS">
           <button type="button" onClick={() => { setGuideOpen(false); void showAll(); }} disabled={busy} aria-label="Find ways to help"><span className="nav-full">Find ways to help</span><span className="nav-compact">Browse</span></button>
-          <button type="button" onClick={() => { setGuideOpen(false); setSpokenOffer(null); setNeedId(null); setNeedsOpen((open) => !open); setAgentOpen(false); }} aria-expanded={needsOpen} aria-controls="need-window" aria-label="Explore sourced needs"><span className="nav-full">Explore needs</span><span className="nav-compact">Needs</span></button>
-          <button type="button" onClick={() => { setGuideOpen(false); setAgentOpen((open) => !open); setNeedsOpen(false); }} aria-expanded={agentOpen} aria-controls="agent-window" aria-label="Connect an agent"><span className="nav-full">Connect agents</span><span className="nav-compact">Agents</span></button>
-          <button type="button" onClick={() => { setGuideOpen(false); setAccountOpen((open) => !open); }} aria-expanded={accountOpen} aria-label="My actions"><span className="nav-full">My actions</span><span className="nav-compact">Actions</span></button>
+          <button type="button" onClick={() => { setGuideOpen(false); setSpokenOffer(null); setNeedId(null); setNeedsOpen((open) => !open); setAgentOpen(false); setAccountOpen(false); }} aria-expanded={needsOpen} aria-controls="need-window" aria-label="Explore sourced needs"><span className="nav-full">Explore needs</span><span className="nav-compact">Needs</span></button>
+          <button type="button" onClick={() => { setGuideOpen(false); setAgentOpen((open) => !open); setNeedsOpen(false); setAccountOpen(false); }} aria-expanded={agentOpen} aria-controls="agent-window" aria-label="Connect an agent"><span className="nav-full">Connect agents</span><span className="nav-compact">Agents</span></button>
+          <button type="button" onClick={() => { setGuideOpen(false); setAccountOpen((open) => !open); setAgentOpen(false); setNeedsOpen(false); }} aria-expanded={accountOpen} aria-label="My actions"><span className="nav-full">My actions</span><span className="nav-compact">Actions</span></button>
         </nav>
       </header>
 
@@ -230,7 +242,7 @@ export default function App() {
           <button className="hero-guide-cta" type="button" onClick={() => setGuideOpen(true)}>How it works</button></div>
       </div>}
 
-      {(resultsOpen || error) && !selected && !needsOpen && <aside className={`results-sheet ${error || (!busy && items.length < 4) ? 'is-compact' : ''}`} aria-label="Sourced opportunities">
+      {(resultsOpen || error) && !selected && !needsOpen && !accountOpen && <aside className={`results-sheet ${error || (!busy && items.length < 4) ? 'is-compact' : ''}`} aria-label="Sourced opportunities">
         <div className="sheet-heading">
           <div><span className="sheet-kicker">{mode ? 'SEARCH RESULTS' : 'EXPLORE'}</span><h2>{mode ? 'Places to explore' : 'Sourced places'}</h2></div>
           <button type="button" onClick={() => { setResultsOpen(false); setError(null); }} aria-label="Close results">×</button>
@@ -248,12 +260,12 @@ export default function App() {
         {!error && items.length > 0 && <p className="sheet-foot">{donationSearch ? 'Donate only on the organization’s official site.' : 'Confirm availability with the organization.'}</p>}
       </aside>}
 
-      {selected && !needsOpen && !agentOpen && <OpportunityDetail key={selected.id} item={selected} fit={fit}
+      {selected && !needsOpen && !agentOpen && !accountOpen && <OpportunityDetail key={selected.id} item={selected} fit={fit}
         mcpHandoff={mcpHandoffId === selected.id}
         reasonCodes={reasonCodes} closeRef={detailCloseRef} onClose={() => setSelectedId(null)} onAccount={() => setAccountOpen(true)} />}
 
       <div className="command-zone">
-        <form className="command-dock" onSubmit={handleSubmit}>
+        <form className="command-dock" data-voice-activity={voiceActivity} onSubmit={handleSubmit}>
           <span className="command-character" aria-hidden="true"><span className="command-eyes"><span className="command-eye" /><span className="command-eye" /></span></span>
           <label className="sr-only" htmlFor="helios-search">Search by cause, place, or date</label>
           <span className="search-field"><input id="helios-search" value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" />
@@ -261,15 +273,15 @@ export default function App() {
           <button type="submit" className="search-submit" disabled={busy || !query.trim()} aria-label="Search opportunities">↗</button>
           <span className="dock-divider" aria-hidden="true" />
           {voiceAvailable
-            ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} onUnavailable={() => setVoiceAvailable(false)} />
-            : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} startRequest={voiceStartRequest} />}
+            ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} onUnavailable={() => setVoiceAvailable(false)} />
+            : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} onExploreNeeds={() => { setNeedsOpen(true); setAgentOpen(false); setAccountOpen(false); }} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />}
         </form>
-        <span className="command-hint">Sourced needs. Clear action state.</span>
+        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'listening' ? 'Listening' : voiceActivity === 'speaking' ? 'Helios is speaking' : 'Hold Space to talk · Tap the mic for conversation')}</span>
       </div>
 
       {agentOpen && <AgentWorkbench onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
       {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); setVoiceStartRequest((value) => value + 1); }} />}
-      {needsOpen && <NeedHub selectedId={needId} onSelect={setNeedId} onClose={() => setNeedsOpen(false)}
+      {needsOpen && !accountOpen && <NeedHub selectedId={needId} onSelect={setNeedId} onClose={() => setNeedsOpen(false)}
         onAccount={() => setAccountOpen(true)} onVoice={() => setVoiceStartRequest((value) => value + 1)}
         voiceAvailable={voiceAvailable} spokenOffer={spokenOffer} />}
       {accountOpen && <AuthPanel onClose={() => setAccountOpen(false)} />}
