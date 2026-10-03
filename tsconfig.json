@@ -14,5 +14,5 @@
     "baseUrl": ".",
     "paths": { "@api": ["src/api/index.ts"] }
   },
-  "include": ["src", "api", "server", "vite.config.ts"]
+  "include": ["src", "api", "server", "scripts", "vite.config.ts"]
 }

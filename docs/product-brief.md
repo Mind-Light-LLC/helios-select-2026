@@ -14,7 +14,7 @@ Helios gives the agent a small published catalog of sourced public-benefit oppor
 4. Ask the voice agent to find another opportunity and fly to it, if OpenAI Realtime is configured.
 5. Call the same `search_opportunities` tool over MCP from an agent client.
 
-The public demo catalog contains nine manually reviewed records across nine country labels. It is intentionally small. It is not a worldwide index and does not confirm that any role still has open capacity. Each record links to the organization so a person can verify availability.
+The public demo catalog contains nine manually reviewed records across eight countries and one global online program. It is intentionally small. It is not a worldwide index and does not confirm that any role still has open capacity. Each record links to the organization so a person can verify availability.
 
 ## Agent contract
 
@@ -47,6 +47,7 @@ Supabase Compute is private alpha and is outside this demo's critical path. Bedr
 
 - Live Supabase migration and readback: nine published records, nine sourced records, one RLS policy, pgvector installed, search function installed.
 - TypeScript and Vite build: passed locally.
+- Protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions. The rendered desktop path showed a Lagos search, one Lagos result, a globe flight and the official link.
 - Semantic retrieval: unverified until the Gemini key is configured and document embeddings are stored.
 - Voice: unverified until the OpenAI key is configured and a browser session completes a search.
 - Registration, admission, payment, attendance: not implemented; external provider authority.

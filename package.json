@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && vite build"
+    "build": "npm run typecheck && vite build",
+    "embed:catalog": "tsx scripts/embed-catalog.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.0",
@@ -19,6 +20,7 @@
     "@types/node": "22.16.0",
     "@types/react": "18.2.66",
     "@types/react-dom": "18.2.22",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "vite": "8.0.16"
   }

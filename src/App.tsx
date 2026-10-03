@@ -90,7 +90,7 @@ export default function App() {
         <form className="search-form" onSubmit={handleSubmit}>
           <label htmlFor="helios-search">What are you looking for?</label>
           <div className="search-row">
-            <input id="helios-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. volunteer with food relief in London" autoComplete="off" />
+            <input id="helios-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. volunteer with food relief in Lagos" autoComplete="off" />
             <button type="submit" disabled={busy || !query.trim()}>Search</button>
           </div>
         </form>

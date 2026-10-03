@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { HeliosItem } from './types';
+
+maplibregl.setWorkerUrl(workerUrl);
 
 type Props = {
   items: HeliosItem[];
