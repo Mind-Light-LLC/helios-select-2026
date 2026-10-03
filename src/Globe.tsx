@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { HeliosItem } from './types';
-import { organizationBadgeTone, organizationLogoPath, organizationMonogram } from './organizationBrand';
+import { organizationBadgeTone, organizationLogoNeedsDarkBackground, organizationLogoPath, organizationMonogram } from './organizationBrand';
 import { shadeTile, shadeTileTemplate } from './solarShade';
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -143,12 +143,14 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       badge.dataset.markTone = String(organizationBadgeTone(clustered ? item.place_label : item.id));
       const logoPath = clustered ? null : organizationLogoPath(item.id);
       if (logoPath) {
+        if (organizationLogoNeedsDarkBackground(item.id)) badge.classList.add('logo-on-dark');
         const logo = document.createElement('img');
         logo.alt = '';
         logo.decoding = 'async';
         logo.onerror = () => {
           logo.remove();
           badge.textContent = organizationMonogram(item);
+          badge.classList.remove('logo-on-dark');
           badge.classList.add('marker-monogram');
         };
         logo.src = logoPath;
