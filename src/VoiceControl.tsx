@@ -61,6 +61,7 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const searchRef = useRef<AbortController | null>(null);
   const connectRef = useRef<AbortController | null>(null);
+  const sessionTimerRef = useRef<number | null>(null);
   const generationRef = useRef(0);
   const resultsRef = useRef(results);
   const needsRef = useRef<NeedView[]>([]);
@@ -75,6 +76,8 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   useEffect(() => () => onActivityChange('idle'), [onActivityChange]);
 
   function releaseResources() {
+    if (sessionTimerRef.current !== null) window.clearTimeout(sessionTimerRef.current);
+    sessionTimerRef.current = null;
     searchRef.current?.abort();
     searchRef.current = null;
     connectRef.current?.abort();
@@ -240,6 +243,12 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
       if (generation !== generationRef.current) return;
       connectRef.current = null;
       await peer.setRemoteDescription({ type: 'answer', sdp: answer });
+      if (generation !== generationRef.current) return;
+      sessionTimerRef.current = window.setTimeout(() => {
+        if (generation !== generationRef.current) return;
+        stop();
+        setError('This five-minute demo conversation ended. Start another to continue.');
+      }, 300000);
     } catch (cause: unknown) {
       if (generation !== generationRef.current) return;
       stop();
