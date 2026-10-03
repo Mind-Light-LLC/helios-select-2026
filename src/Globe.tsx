@@ -12,6 +12,12 @@ function globalZoom(width: number): number {
   return width < 650 ? 1.32 : width < 1100 ? 1.92 : 2.12;
 }
 
+function selectedCameraOffset(width: number, height: number): [number, number] {
+  if (width <= 760) return [0, -Math.min(height * 0.32, 205)];
+  const cardLeft = width - Math.min(448, width - 40) - Math.min(56, Math.max(20, width * 0.038));
+  return [Math.min(0, cardLeft - 140 - width / 2), -35];
+}
+
 const earthStyle: maplibregl.StyleSpecification = {
   version: 8,
   projection: { type: 'globe' },
@@ -27,13 +33,23 @@ const earthStyle: maplibregl.StyleSpecification = {
       type: 'raster', tiles: [shadeTileTemplate(new Date())], tileSize: 256, maxzoom: 5,
     },
   },
-  layers: [{ id: 'earth', type: 'raster', source: 'earth' },
+  layers: [{
+    id: 'earth', type: 'raster', source: 'earth',
+    paint: {
+      'raster-brightness-min': 0.11,
+      'raster-brightness-max': 0.98,
+      'raster-contrast': -0.04,
+      'raster-saturation': 0.08,
+    },
+  },
     { id: 'shade', type: 'raster', source: 'shade', paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } }],
   sky: {
-    'sky-color': '#020812',
-    'horizon-color': '#13314a',
-    'fog-color': '#476b83',
-    'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 1, 7, 0],
+    'sky-color': '#020a16',
+    'horizon-color': '#1d6287',
+    'fog-color': '#4585aa',
+    'sky-horizon-blend': 0.24,
+    'horizon-fog-blend': 0.22,
+    'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 0.4, 5, 0.4, 7, 0],
   },
 };
 
@@ -45,6 +61,7 @@ type Props = {
 };
 
 export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -63,12 +80,32 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
         attributionControl: false,
       });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+      let lastHaloRadius = -1;
+      const updateHalo = () => {
+        const { clientWidth: width, clientHeight: height } = map.getContainer();
+        const latitude = map.getCenter().lat * Math.PI / 180;
+        const radius = 512 * 2 ** map.getZoom() / (2 * Math.PI * Math.cos(latitude));
+        const focalLength = height / (2 * Math.tan(map.getVerticalFieldOfView() * Math.PI / 360));
+        const screenRadius = Math.round(radius * Math.sqrt(focalLength / (focalLength + 2 * radius)) / 4) * 4;
+        if (!frameRef.current) return;
+        const visible = screenRadius <= Math.hypot(width, height) / 2 + 40;
+        frameRef.current.dataset.haloReady = String(visible);
+        if (!visible || screenRadius === lastHaloRadius) return;
+        frameRef.current.style.setProperty('--globe-radius', `${screenRadius}px`);
+        frameRef.current.style.setProperty('--globe-halo-size', `${screenRadius * 2 + 80}px`);
+        lastHaloRadius = screenRadius;
+      };
+      map.on('move', updateHalo);
+      map.on('resize', updateHalo);
+      updateHalo();
       const solarRefresh = window.setInterval(() => {
         const source = map.getSource('shade') as maplibregl.RasterTileSource | undefined;
         source?.setTiles([shadeTileTemplate(new Date())]);
       }, 300000);
       mapRef.current = map;
       return () => {
+        map.off('move', updateHalo);
+        map.off('resize', updateHalo);
         window.clearInterval(solarRefresh);
         markersRef.current.forEach((marker) => marker.remove());
         markersRef.current = [];
@@ -144,20 +181,25 @@ export function Globe({ items, selectedId, onSelect, onExplore }: Props) {
       }
       return;
     }
-    const width = map.getContainer().clientWidth;
-    map.flyTo({
-      center: [item.longitude, item.latitude],
-      zoom: 2.6,
-      offset: width < 650
-        ? [0, -Math.min(map.getContainer().clientHeight * 0.32, 205)]
-        : width < 1100 ? [-Math.min(width * 0.24, 190), -35] : [Math.min(width * 0.11, 130), -35],
-      duration,
-      essential: true,
-    });
+    const frameSelected = (animationDuration: number) => {
+      const { clientWidth: width, clientHeight: height } = map.getContainer();
+      map.flyTo({
+        center: [item.longitude, item.latitude],
+        zoom: 2.6,
+        offset: selectedCameraOffset(width, height),
+        duration: animationDuration,
+        essential: true,
+      });
+    };
+    const onResize = () => frameSelected(0);
+    map.on('resize', onResize);
+    frameSelected(duration);
+    return () => { map.off('resize', onResize); };
   }, [items, selectedId]);
 
-  return <div className="globe-frame">
+  return <div ref={frameRef} className="globe-frame">
     <div ref={containerRef} className="globe-canvas" aria-label="Global map of sourced results" />
+    <div className="globe-halo" aria-hidden="true" />
     {error && <div className="globe-error" role="status">{error}</div>}
     <a className="imagery-credit" href="https://www.earthdata.nasa.gov/data/tools/global-imagery-browse-services" target="_blank" rel="noopener noreferrer">Earth imagery: NASA GIBS · Blue Marble 2004</a>
   </div>;
