@@ -35,7 +35,9 @@ test('voice access is separate from paid search and requires its own switch', as
     assert.equal(providerCalls, 1);
     assert.equal(enabled.headers.get('Cache-Control'), 'no-store');
     assert.match(JSON.stringify(sessionBody), /focus_place/);
-    assert.match(JSON.stringify(sessionBody), /place to the exact city or country/);
+    assert.match(JSON.stringify(sessionBody), /Set place to the city or country/);
+    assert.match(JSON.stringify(sessionBody), /Translate search terms and weekdays into English/);
+    assert.match(JSON.stringify(sessionBody), /Wait for the person to speak first/);
   } finally {
     if (originalVoice === undefined) delete process.env.HELIOS_VOICE_ENABLED;
     else process.env.HELIOS_VOICE_ENABLED = originalVoice;

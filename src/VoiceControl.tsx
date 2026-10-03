@@ -225,7 +225,6 @@ export function VoiceControl({ available, onSearch, onFocus, onPlace, onNeed, re
       channel.addEventListener('open', () => {
         if (generation !== generationRef.current) return;
         setState(mode === 'hold' && holdRef.current ? 'listening' : 'ready');
-        if (mode === 'continuous') channel.send(JSON.stringify({ type: 'response.create' }));
       });
       channel.addEventListener('message', (event: MessageEvent<string>) => {
         try {
