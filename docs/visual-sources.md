@@ -2,6 +2,8 @@
 
 Checked 2026-10-03. The globe uses NASA GIBS Blue Marble, August 2004, as a photographic basemap. It is historical imagery, not a live Earth view. The [NASA media guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/) permit factual uses with source acknowledgement and prohibit implying NASA endorsement. The map links to [NASA GIBS](https://www.earthdata.nasa.gov/data/tools/global-imagery-browse-services) beside the imagery.
 
+At city zoom, the map overlays [OpenFreeMap](https://openfreemap.org/) vector tiles and place labels using OpenStreetMap data. The map displays OpenFreeMap and OpenStreetMap attribution while this layer is visible. OpenFreeMap allows public use without a key but does not offer an SLA for its public service. A pin marks the organization's listed city or coordinates, not a verified shift address.
+
 The following marks identify 31 records in the sourced opportunity catalog. The images came from organization sites or their official volunteer portals. Most were resized or centered; the Feeding Hong Kong and Lebanese Food Bank files crop the symbol from the official horizontal logo. Colors and proportions are unchanged. A source URL establishes provenance, not a license or partnership. Neither the imagery nor these marks indicate endorsement of Helios. Display rights have not been confirmed with each organization; remove a mark if its owner objects.
 
 | Record | Asset source |
