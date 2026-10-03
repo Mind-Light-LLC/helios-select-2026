@@ -264,7 +264,6 @@ export default function App() {
             ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} onUnavailable={() => setVoiceAvailable(false)} />
             : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} startRequest={voiceStartRequest} />}
         </form>
-        <span className="command-hint">Sourced needs. Clear action state.</span>
       </div>
 
       {agentOpen && <AgentWorkbench selectedId={selectedId} onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
