@@ -4,7 +4,7 @@ import { POST, voiceTools } from './voice-token.js';
 
 test('voice search requires a place field so the model reports whether one is known', () => {
   const search = voiceTools.find((tool) => tool.name === 'search_catalog');
-  assert.deepEqual(search?.parameters.required, ['query', 'place']);
+  assert.deepEqual(search?.parameters.required, ['query', 'place', 'reply_language']);
 });
 
 test('voice access is separate from paid search and requires its own switch', async () => {

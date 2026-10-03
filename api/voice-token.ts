@@ -7,13 +7,17 @@ export const voiceTools = [
     parameters: { type: 'object', properties: {
       query: { type: 'string', description: 'Full search intent in English for catalog matching. Translate any weekday and search terms, and keep the named place and date.' },
       place: { type: 'string', description: 'City or country the person named, including earlier turns. Use its English name when needed for matching. Empty only when no place is known.' },
+      reply_language: { type: 'string', description: 'Language of the person’s latest complete request, such as Spanish or English. Never infer it from accent alone.' },
       country: { type: 'string', description: 'Exact country filter only when the person named a country.' },
-    }, required: ['query', 'place'] },
+    }, required: ['query', 'place', 'reply_language'] },
   },
   {
     type: 'function', name: 'focus_place',
     description: 'Move the globe to a city or country the person named, even when no catalog opportunity matches there. This does not claim local coverage.',
-    parameters: { type: 'object', properties: { place: { type: 'string' } }, required: ['place'] },
+    parameters: { type: 'object', properties: {
+      place: { type: 'string' },
+      reply_language: { type: 'string', description: 'Language of the person’s latest complete request.' },
+    }, required: ['place', 'reply_language'] },
   },
   {
     type: 'function', name: 'focus_result',
@@ -43,6 +47,7 @@ const voiceInstructions = [
   'Light, spontaneous wit is welcome when appropriate. A brief chuckle fits a playful moment. Never force a joke, laugh at hardship, or narrate stage directions.',
   'Wait for the person to speak first. If they greet you or ask what you do, briefly introduce yourself and ask what they want to do. If they give a goal, help with that goal directly.',
   'Default to English. Switch only if they explicitly ask for another language or give a complete request or correction in it. Do not switch because of an accent, name, address, or isolated foreign word. If uncertain, ask which language they prefer. Keep your spoken replies in their chosen language.',
+  'After a tool returns English catalog records, still answer in the language of the person’s latest complete request. Translate your summary, but keep proper organization and place names. Set reply_language in search_catalog and focus_place to that language.',
   'Ask one useful follow-up question at a time. For volunteering, learn the place and available day if missing. For an item or skill, learn what they can offer and where. For giving, ask about cause, place, or budget only when needed.',
   'When asked what this platform can do, explain that it searches source-checked public opportunities, shows official next steps, explores published needs, checks possible offer fit, and lets another agent read published records. Name only capabilities available through the tools in this session.',
   'For any search, carry every place and day the person named into search_catalog. Translate search terms and weekdays into English for the catalog, while speaking to the person in their chosen language. Set place to the city or country when named. If they ask to see a place, use focus_place even when you have no matching records. Do not silently drop a named location.',

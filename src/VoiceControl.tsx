@@ -118,6 +118,7 @@ export function VoiceControl({ available, onSearch, onFocus, onPlace, onNeed, re
       const args = toolArguments(call.arguments);
       if (call.name === 'search_catalog') {
         const place = optionalPlaceField(args);
+        const replyLanguage = optionalStringField(args, 'reply_language');
         const query = voiceCatalogQuery(getStringField(args, 'query'), place);
         const country = optionalStringField(args, 'country');
         searchRef.current?.abort();
@@ -129,12 +130,13 @@ export function VoiceControl({ available, onSearch, onFocus, onPlace, onNeed, re
         if (generation !== generationRef.current || controller.signal.aborted) return;
         callbacksRef.current.onSearch(response, query, place);
         resultsRef.current = [...response.items, ...(response.alternatives ?? []).map(({ item }) => item)];
-        output = voiceSearchOutput(response);
+        output = { ...voiceSearchOutput(response), reply_language: replyLanguage ?? null };
         if (searchRef.current === controller) searchRef.current = null;
       } else if (call.name === 'focus_place') {
         const place = getStringField(args, 'place');
+        const replyLanguage = optionalStringField(args, 'reply_language');
         const focused = await callbacksRef.current.onPlace(place);
-        output = { focused, place, note: focused
+        output = { focused, place, reply_language: replyLanguage ?? null, note: focused
           ? 'Globe moved to the named place; local opportunities were not verified.'
           : 'The place could not be located on the globe. Catalog pins remain visible.' };
       } else if (call.name === 'focus_result') {
