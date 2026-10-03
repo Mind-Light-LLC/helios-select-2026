@@ -45,9 +45,9 @@
 }
 .globe-frame[data-halo-ready='true'] .globe-halo { opacity: 1; }
 .globe-canvas canvas { filter: brightness(1.08) contrast(1.03) saturate(1.06); }
-.globe-marker { width: 56px; height: 56px; pointer-events: none; }
-.marker-badge { width: 44px; height: 44px; pointer-events: auto; }
-.marker-label { top: 56px; }
+.globe-marker { width: 48px; height: 48px; pointer-events: none; }
+.marker-badge { width: 36px; height: 36px; pointer-events: auto; }
+.marker-label { top: 48px; }
 .organization-mark { width: 45px; height: 45px; }
 .imagery-credit { background: #020a16aa; }
 .command-zone { left: 50%; bottom: 29px; width: min(675px, calc(100vw - 60px)); transform: translateX(-50%); }

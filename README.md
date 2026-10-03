@@ -1,10 +1,23 @@
 # HeliOS
 
+[Production demo](https://helios-lac-pi.vercel.app) · [Product brief](docs/product-brief.md) · [Agent interface](docs/MCP_CLIENT.md)
+
 **A better answer than "here are 47 links."**
 
 Someone has ten dollars, an open Sunday, or a skill they can share. An organization has work that needs doing. HeliOS helps the two find a plausible fit, shows the evidence behind it, and makes the next step clear. The organization still decides whether a person is accepted, a gift is received, or a resource is delivered.
 
 This is an original project built for the Supabase Select 2026 Hackathon. It is a working global discovery and agent handoff demo, with a San Francisco starting point. It is not a claim that volunteer slots, donations, or outcomes have been confirmed.
+
+## What works
+
+| Surface | Current behavior |
+| --- | --- |
+| Globe and search | 47 sourced paths across 27 country labels, with source dates and official next steps. All pins remain on the globe after a search; nearby pins group at world scale and split when zoomed. An empty match offers sourced alternatives when available. |
+| HeliOS voice | OpenAI Realtime conversation in the bottom search dock, with no voice popup. Hold Option to speak or tap the mic for a conversation. The dock glows cyan while listening and amber while HeliOS speaks. Voice runs only where the server enables it. |
+| Agent handoff | A read-only MCP and JSON interface exposes the same records, source links, publication state, and action authority. |
+| External outcomes | Official partner links are handoffs. HeliOS does not submit, book, donate, or claim an outcome without a provider receipt. |
+
+The globe uses [NASA GIBS Blue Marble imagery](docs/visual-sources.md). Organization marks are sourced from official sites where a legible mark was available; the remaining records use initials. Marks identify organizations and do not imply partnership.
 
 ## Try it in two minutes
 
@@ -25,11 +38,13 @@ Read the [product brief](docs/product-brief.md) for the demo scope, [voice-to-ve
 
 ## Run locally
 
-Use Node.js 22 or newer. Run `npm ci`, then `npm run dev`. Vite serves the 47-record demo catalog and text search. OpenAI Realtime is the sole voice path: hold Option to speak or tap the mic for a conversation. The search bar glows cyan while listening and amber while HeliOS speaks. When paid voice is unavailable, type in the search bar. `npm run build` typechecks and compiles the client. The globe uses NASA GIBS Blue Marble imagery from August 2004 with on-map attribution.
+Use Node.js 22 or newer. Run `npm ci`, then `npm run dev` for the Vite frontend and bundled catalog. Run `vercel dev` from a checkout linked to `mind-light/helios` when testing the server routes, Supabase, MCP, or voice. Local Vite alone has no voice API. Never copy a project key into client code or commit a local environment file.
+
+Run `npm test` for the search, map, voice controls, and API unit tests. Run `npm run build` for client and server TypeScript checks plus the production client build. Verify the rendered search, detail, no-match, and voice states in a browser; build success alone does not prove them.
 
 The canonical repository branch is `main`, connected to the single Vercel project `mind-light/helios`. Make changes in an isolated branch and open a pull request to `main`. Each branch produces its own preview deployment; merging to `main` updates the production deployment. Do not deploy an uncommitted local checkout and treat its URL as a release. `npm run dev` serves only the Vite frontend and falls back to local demo data. `vercel dev` serves the Vercel API routes. Neither local mode proves the Git preview or production environment.
 
-Voice availability depends on the server-side `OPENAI_API_KEY` and `HELIOS_VOICE_ENABLED=true` in that deployment. `HELIOS_PAID_AI_ENABLED` controls Gemini and Bedrock search separately. Keep voice disabled until the project's shared request limit, OpenAI hard spend limit, and a browser microphone-to-answer check are in place. A Vercel share link grants access to one protected deployment; it does not change the project-wide protection setting.
+Voice availability depends on the server-side `OPENAI_API_KEY` and `HELIOS_VOICE_ENABLED=true` in that deployment. `HELIOS_PAID_AI_ENABLED` controls Gemini and Bedrock search separately. Keep public voice disabled until the project's shared request limit, OpenAI hard spend limit, and a browser microphone-to-answer check are in place. `/api/catalog` reports `voice_available`, so a successful build cannot be mistaken for an enabled voice service. A Vercel share link grants access to one protected deployment; it does not change the project-wide protection setting.
 
 Use `vercel dev` for the full API, Supabase Auth, MCP, and OpenAI Realtime path. The API runtime needs `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for its isolated HeliOS project. `GEMINI_API_KEY` and `OPENAI_API_KEY` belong only in server-side settings. Never commit credentials. Account creation uses Supabase email/password Auth; a hosted project may require email confirmation and a configured redirect URL. Guests can still explore.
 
