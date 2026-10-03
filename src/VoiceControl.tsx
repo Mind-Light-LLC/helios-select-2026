@@ -16,7 +16,6 @@ type Props = {
   holdToTalk: boolean;
   onActivityChange: (activity: VoiceActivity) => void;
   onNotice: (notice: string | null) => void;
-  onUnavailable?: () => void;
 };
 
 type VoiceState = 'idle' | 'requesting' | 'connecting' | 'ready' | 'listening' | 'searching' | 'responding' | 'speaking';
@@ -52,9 +51,8 @@ function optionalStringField(args: Record<string, unknown>, name: string): strin
   return getStringField(args, name);
 }
 
-export function VoiceControl({ available, onSearch, onFocus, onNeed, results, startRequest, holdToTalk, onActivityChange, onNotice, onUnavailable }: Props) {
+export function VoiceControl({ available, onSearch, onFocus, onNeed, results, startRequest, holdToTalk, onActivityChange, onNotice }: Props) {
   const [state, setState] = useState<VoiceState>('idle');
-  const [caption, setCaption] = useState('');
   const [error, setError] = useState<string | null>(null);
   const holdRef = useRef(false);
   const holdModeRef = useRef(false);
@@ -68,7 +66,11 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
   const needsRef = useRef<NeedView[]>([]);
   const callbacksRef = useRef({ onSearch, onFocus, onNeed });
   useEffect(() => { resultsRef.current = results; callbacksRef.current = { onSearch, onFocus, onNeed }; }, [results, onSearch, onFocus, onNeed]);
-  useEffect(() => { onActivityChange(state === 'listening' || state === 'speaking' ? state : 'idle'); }, [state, onActivityChange]);
+  useEffect(() => {
+    const activity: VoiceActivity = state === 'idle' ? 'idle' : state === 'listening' || state === 'speaking' ? state
+      : state === 'requesting' || state === 'connecting' ? 'connecting' : holdModeRef.current ? 'hold-ready' : 'ready';
+    onActivityChange(activity);
+  }, [state, onActivityChange]);
   useEffect(() => onNotice(error), [error, onNotice]);
   useEffect(() => () => onActivityChange('idle'), [onActivityChange]);
 
@@ -90,7 +92,6 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
     generationRef.current += 1;
     releaseResources();
     holdModeRef.current = false;
-    setCaption('');
     setError(null);
     setState('idle');
   }
@@ -113,7 +114,6 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
         activeController = controller;
         searchRef.current = controller;
         setState('searching');
-        setCaption(`Searching for ${query}`);
         const response = await searchCatalog(query, country ? { country } : {}, controller.signal);
         if (generation !== generationRef.current || controller.signal.aborted) return;
         callbacksRef.current.onSearch(response);
@@ -182,15 +182,11 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
     if (event.type === 'input_audio_buffer.speech_started') {
       searchRef.current?.abort();
       searchRef.current = null;
-      setCaption('');
       if (!holdModeRef.current || holdRef.current) setState('listening');
     } else if (event.type === 'input_audio_buffer.speech_stopped') {
       setState('responding');
     } else if (event.type === 'response.created') {
-      setCaption('');
       setState('responding');
-    } else if (event.type === 'response.output_audio_transcript.delta' && typeof event.delta === 'string') {
-      setCaption((current) => `${current}${event.delta}`.slice(-240));
     } else if (event.type === 'response.output_item.done' && isFunctionCall(event.item)) {
       void handleCall(event.item, channel, generation);
     } else if (event.type === 'output_audio_buffer.started') {
@@ -217,7 +213,11 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
       const audio = new Audio();
       audio.autoplay = true;
       audioRef.current = audio;
-      peer.ontrack = (event) => { if (generation === generationRef.current) audio.srcObject = event.streams[0] ?? null; };
+      peer.ontrack = (event) => {
+        if (generation !== generationRef.current) return;
+        audio.srcObject = event.streams[0] ?? null;
+        if (audio.srcObject) void audio.play().catch(() => setError('Audio playback was blocked. Allow sound and try again.'));
+      };
       const stream = await requestMicrophone(generation, () => generationRef.current);
       if (generation !== generationRef.current) {
         stream.getTracks().forEach((track) => track.stop());
@@ -266,7 +266,6 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
       if (generation !== generationRef.current) return;
       stop();
       setError(cause instanceof Error ? cause.message : 'Voice could not start.');
-      onUnavailable?.();
     }
   }
 
@@ -289,10 +288,6 @@ export function VoiceControl({ available, onSearch, onFocus, onNeed, results, st
     <button type="button" className={`voice-button ${active ? 'is-live' : ''}`} onClick={active ? stop : () => void start()} disabled={!available} aria-label={active ? 'Stop voice' : available ? 'Start voice' : 'Voice unavailable'} aria-pressed={active} title={!available ? 'Voice is unavailable right now' : undefined}>
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" /></svg>
     </button>
-    {active && <div className="voice-status" role="status" aria-live="polite">
-      <strong>{state === 'speaking' ? 'Helios is speaking' : state === 'ready' ? 'Microphone on' : state}</strong>
-      {caption && <p>{caption}</p>}
-    </div>}
-    {error && <span className="sr-only" role="alert">{error}</span>}
+    <span className="sr-only" role="status" aria-live="polite">{active ? `Helios voice ${state}` : 'Helios voice off'}</span>
   </div>;
 }

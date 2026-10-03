@@ -1,1 +1,1 @@
-export type VoiceActivity = 'idle' | 'listening' | 'speaking';
+export type VoiceActivity = 'idle' | 'connecting' | 'ready' | 'hold-ready' | 'listening' | 'speaking';

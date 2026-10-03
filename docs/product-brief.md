@@ -12,7 +12,7 @@ Helios gives the agent a small published catalog of sourced public-benefit oppor
 2. Helios shows Project Open Hand and St. Anthony Foundation: their official pages publish Sunday meal shifts. Neither record claims an open slot. Meals on Wheels SF is excluded because its FAQ says it has no weekend volunteer program.
 3. Ask: "I have $10 to give." Project Open Hand appears first because its official form publishes a $10 minimum. Other donation paths are shown with their amount unverified.
 4. Open the chosen organization’s official volunteer or donation page. Helios does not submit registration or payment. Call `search_opportunities` over MCP to get the same source, recurring days, action authority, and shareable globe link.
-5. Open My actions to return to a saved path or create a Supabase email/password account. Discovery does not require an account. OpenAI Realtime can search, focus a record, list sourced needs, check an offer, and show a need card. The local Vite fallback uses browser speech and typed replies for guided catalog search.
+5. Open My actions to return to a saved path or create a Supabase email/password account. Discovery does not require an account. When the paid-AI gate is enabled, OpenAI Realtime can search, focus a record, list sourced needs, check an offer, and show a need card. Text search remains available when voice is disabled.
 6. Open Needs. Inspect the sourced Food Bank Singapore signal or create a private need-card draft for organization review. Save an action and return to it from My actions. The trail never marks a click as participation or impact.
 
 The local demo includes nine global catalog paths and 15 manually reviewed San Francisco organizations. When Supabase is configured, the server combines its published records with the SF catalog. Coverage is intentionally limited and no record confirms current shift capacity. A published recurring day is a lead to verify, not a dated event listing.
@@ -62,7 +62,7 @@ Supabase Compute is private alpha and is outside this demo's critical path. Bedr
 - Prior protected Vercel preview: catalog returned nine sourced records; MCP initialize, tool listing and search responded with structured next actions. The new San Francisco catalog has not yet been deployed or read back there.
 - Local rendered desktop and phone paths: Lagos search produced one result, globe focus and official action; an unmatched query showed a clear empty state and zero markers.
 - Semantic retrieval: unverified until the Gemini key is configured and document embeddings are stored.
-- OpenAI Realtime speech: token issuance worked, but the in-app browser did not complete microphone capture in this test. The interface switched to guided browser speech and typed replies. A spoken end-to-end Realtime search remains unverified.
+- OpenAI Realtime speech: token issuance worked in an earlier gated test, but the in-app browser did not complete microphone capture. The current interface uses a dock glow and no voice popup or browser-speech fallback. A spoken end-to-end Realtime search remains unverified.
 - Supabase signup: UI and configuration are wired; an actual signup and email confirmation remain unverified until a test identity completes the provider flow.
 - Registration, admission, payment, attendance: not implemented; external provider authority.
 - Need quantity, offer acceptance, and delivery to a recipient: unverified. The sourced need is a manually reviewed hackathon seed, not a live partner request.

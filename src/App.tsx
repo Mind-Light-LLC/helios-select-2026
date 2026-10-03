@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { loadCatalog, searchCatalog } from '@api';
 import { Globe } from './Globe';
 import { VoiceControl } from './VoiceControl';
-import { BrowserVoiceAgent } from './BrowserVoiceAgent';
 import { NeedHub } from './NeedHub';
 import { AuthPanel } from './AuthPanel';
 import { OpportunityDetail } from './OpportunityDetail';
@@ -70,6 +69,12 @@ export default function App() {
   const returnFocusIdRef = useRef<string | null>(selectedId);
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const donationSearch = /\$\s*\d+|\bdonat\w*\b|\bdollars?\b/i.test(query);
+
+  function startVoice() {
+    if (!voiceAvailable) { setVoiceNotice('OpenAI voice is unavailable in this preview.'); return; }
+    setVoiceNotice(null);
+    setVoiceStartRequest((value) => value + 1);
+  }
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -238,7 +243,7 @@ export default function App() {
       {!resultsOpen && !selected && !needsOpen && <div className="hero-copy">
         <p>THE HELIOS ATLAS</p>
         <h1>Find a way<br />to help.</h1>
-        <div className="hero-actions"><button className="hero-voice-cta" type="button" onClick={() => setVoiceStartRequest((value) => value + 1)}>Talk to HeliOS <span aria-hidden="true">↗</span></button>
+        <div className="hero-actions"><button className="hero-voice-cta" type="button" onClick={startVoice}>Talk to HeliOS <span aria-hidden="true">↗</span></button>
           <button className="hero-guide-cta" type="button" onClick={() => setGuideOpen(true)}>How it works</button></div>
       </div>}
 
@@ -272,17 +277,15 @@ export default function App() {
             {!query && <span className="search-example" key={exampleIndex} aria-hidden="true">{exampleQueries[exampleIndex]}</span>}</span>
           <button type="submit" className="search-submit" disabled={busy || !query.trim()} aria-label="Search opportunities">↗</button>
           <span className="dock-divider" aria-hidden="true" />
-          {voiceAvailable
-            ? <VoiceControl available onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} onUnavailable={() => setVoiceAvailable(false)} />
-            : <BrowserVoiceAgent onSearch={acceptVoiceSearch} onFocus={focusItem} onExploreNeeds={() => { setNeedsOpen(true); setAgentOpen(false); setAccountOpen(false); }} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />}
+          <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onNeed={focusNeed} results={items} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
         </form>
-        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'listening' ? 'Listening' : voiceActivity === 'speaking' ? 'Helios is speaking' : 'Hold Space to talk · Tap the mic for conversation')}</span>
+        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'connecting' ? 'Connecting HeliOS voice…' : voiceActivity === 'listening' ? 'Listening to you' : voiceActivity === 'speaking' ? 'Helios is speaking' : voiceActivity === 'hold-ready' ? 'Hold Option to speak · Tap the mic to stop' : voiceActivity === 'ready' ? 'Speak to HeliOS · Tap the mic to stop' : voiceAvailable ? 'Hold Option to talk · Tap the mic for conversation' : 'OpenAI voice unavailable in this preview')}</span>
       </div>
 
       {agentOpen && <AgentWorkbench onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
-      {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); setVoiceStartRequest((value) => value + 1); }} />}
+      {guideOpen && <GuidePanel onClose={() => setGuideOpen(false)} onTalk={() => { setGuideOpen(false); startVoice(); }} />}
       {needsOpen && !accountOpen && <NeedHub selectedId={needId} onSelect={setNeedId} onClose={() => setNeedsOpen(false)}
-        onAccount={() => setAccountOpen(true)} onVoice={() => setVoiceStartRequest((value) => value + 1)}
+        onAccount={() => setAccountOpen(true)} onVoice={startVoice}
         voiceAvailable={voiceAvailable} spokenOffer={spokenOffer} />}
       {accountOpen && <AuthPanel onClose={() => setAccountOpen(false)} />}
     </main>
