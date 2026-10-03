@@ -10,7 +10,7 @@ A person describes a cause, place, and time; Helios returns a relevant source-ch
 
 | State | Rule | Current evidence |
 | --- | --- | --- |
-| Sourced listing | Published record has an official source, check time, place meaning, and an action authority. | Nine live global records; eighteen locally curated San Francisco paths. |
+| Sourced listing | Published record has an official source, check time, place meaning, and an action authority. | Nine published database records and 38 bundled curated paths, including eighteen in San Francisco. The merged demo catalog has 47 records; bundled paths are not evidence of database publication. |
 | Search match | Place and date are constraints. If coverage is absent, return no match instead of an unrelated organization. | Local API rejects an out-of-catalog Kenya request and an October 18 query for the October 17 Lakewood event; it returns the Singapore food bank for a Singapore request. Broader quality and time-zone edge cases are unverified. |
 | Official handoff | Show the provider's action URL and explain that opening it is not registration. | Public card and read-only MCP response. No provider receipt. |
 | Personal trail | A signed-in person's saved or started path is private; provider acknowledgement requires a receipt. | A device-local action trail is visible and labeled as such. The private table exists, but account-synced save and provider readback are unverified. |
@@ -36,4 +36,4 @@ Supabase Compute is not required. The current product runs on ordinary Supabase 
 2. Test a signed-in person's private saved path and an authorized organization's claim flow. Keep unclaimed listings clearly labeled.
 3. Obtain one consenting organization's verified Stripe test payment route. Prove webhook signature, idempotency, payment readback, refund handling, and private donor receipt before showing completed giving.
 4. Run a small search evaluation across absent places, conflicting dates, remote eligibility, stale sources, and no-match cases. Measure unsupported claims, not just successful tool calls.
-5. Move the eighteen device-bundled San Francisco records into the reviewed database publication path before treating Supabase as the single catalog source. Add review ownership and a queue for the seven-day source deadlines.
+5. Move the 38 bundled curated records into the reviewed database publication path before treating Supabase as the single catalog source. Add review ownership and a queue for the seven-day source deadlines.

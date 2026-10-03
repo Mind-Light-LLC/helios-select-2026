@@ -1,0 +1,78 @@
+import type { HeliosItem } from './types.js';
+import { item, type GlobalRecord } from './globalRecord.js';
+
+const sourced = (record: Omit<GlobalRecord, 'source_checked_at'>): HeliosItem =>
+  item({ ...record, source_checked_at: '2026-10-03T22:30:00Z' });
+
+export const moreGlobalCatalog: HeliosItem[] = [
+  sourced({
+    id: 'berliner-tafel-volunteer', record_kind: 'volunteer', title: 'Help sort food with Berliner Tafel',
+    summary: 'Berliner Tafel lists food sorting, packing, driving and other volunteer needs at its Berlin wholesale market.',
+    organization_name: 'Berliner Tafel', country: 'Germany', place_label: 'Berlin, Germany',
+    pin_meaning: 'organization_city', schedule_text: 'Weekday and some Saturday roles; confirm a shift with the organization',
+    latitude: 52.5200, longitude: 13.4050, cause_tags: ['food', 'hunger', 'community'],
+    source_url: 'https://www.berliner-tafel.de/helfen/ehrenamt/aktueller-bedarf',
+    action_url: 'https://www.berliner-tafel.de/helfen/ehrenamt/aktueller-bedarf',
+    action_kind: 'interest_form', action_label: 'See current needs and interest form',
+    action_note: 'The city pin is not a shift. Market volunteers must be at least 18; the organization confirms placement.',
+    starts_at: null,
+  }),
+  sourced({
+    id: 'feeding-hong-kong-volunteer', record_kind: 'volunteer', title: 'Rescue food with Feeding Hong Kong',
+    summary: 'Feeding Hong Kong lists warehouse, office and surplus bread collection roles for volunteers.',
+    organization_name: 'Feeding Hong Kong', country: 'Hong Kong SAR', place_label: 'Hong Kong',
+    pin_meaning: 'organization_city', schedule_text: 'Roles and places vary; check the volunteer calendar after registration',
+    latitude: 22.3193, longitude: 114.1694, cause_tags: ['food', 'hunger', 'environment'],
+    source_url: 'https://feedinghk.org/faqs/', action_url: 'https://feedinghk.org/volunteer-register/',
+    action_kind: 'registration_page', action_label: 'Register with Feeding Hong Kong',
+    action_note: 'Registration creates an account; it does not reserve a shift. The pin represents the city.',
+    starts_at: null,
+  }),
+  sourced({
+    id: 'sos-thailand-food-rescue', record_kind: 'volunteer', title: 'Join food rescue with SOS Thailand',
+    summary: 'Scholars of Sustenance Thailand has an official form for local food rescue volunteers.',
+    organization_name: 'Scholars of Sustenance Thailand', country: 'Thailand', place_label: 'Bangkok, Thailand',
+    pin_meaning: 'organization_city', schedule_text: 'The organization arranges training and activities after application',
+    latitude: 13.7563, longitude: 100.5018, cause_tags: ['food', 'hunger', 'environment'],
+    source_url: 'https://www.scholarsofsustenance.org/foodbank-volunteer',
+    action_url: 'https://www.scholarsofsustenance.org/foodbank-volunteer',
+    action_kind: 'interest_form', action_label: 'Open SOS Thailand volunteer form',
+    action_note: 'The official form asks for health and emergency contact details. No activity is confirmed by this listing.',
+    starts_at: null,
+  }),
+  sourced({
+    id: 'banco-alimentos-bogota-volunteer', record_kind: 'volunteer', title: 'Volunteer with Banco de Alimentos Bogotá',
+    summary: 'The Bogotá food bank invites prospective volunteers to contact it through its official volunteer form.',
+    organization_name: 'Banco de Alimentos Bogotá', country: 'Colombia', place_label: 'Bogotá, Colombia',
+    pin_meaning: 'organization_city', schedule_text: 'Activities and dates depend on the organization’s response',
+    latitude: 4.7110, longitude: -74.0721, cause_tags: ['food', 'hunger', 'community'],
+    source_url: 'https://www.bancodealimentos.org.co/voluntariado/quiero-ser-voluntario/',
+    action_url: 'https://www.bancodealimentos.org.co/voluntariado/quiero-ser-voluntario/',
+    action_kind: 'interest_form', action_label: 'Open official volunteer form',
+    action_note: 'The city pin is not a meeting point or confirmed shift.', starts_at: null,
+  }),
+  sourced({
+    id: 'lebanese-food-bank-volunteer', record_kind: 'volunteer', title: 'Offer time to Lebanese Food Bank',
+    summary: 'Lebanese Food Bank offers an official form for people interested in volunteering against hunger and food waste.',
+    organization_name: 'Lebanese Food Bank', country: 'Lebanon', place_label: 'Sin el Fil, Lebanon',
+    pin_meaning: 'organization_city', schedule_text: 'The organization follows up about current roles',
+    latitude: 33.8757, longitude: 35.5277, cause_tags: ['food', 'hunger', 'community'],
+    source_url: 'https://lebanesefoodbank.org/take-action/volunteer/',
+    action_url: 'https://lebanesefoodbank.org/take-action/volunteer/',
+    action_kind: 'interest_form', action_label: 'Open Lebanese Food Bank form',
+    action_note: 'Submitting interest does not confirm a role or shift. The pin represents the organization’s area.',
+    starts_at: null,
+  }),
+  sourced({
+    id: 'sos-philippines-rescue-kitchen', record_kind: 'volunteer', title: 'Ask about SOS Philippines Rescue Kitchen',
+    summary: 'SOS Philippines describes its volunteer-run Rescue Kitchen and lists a contact address for participation.',
+    organization_name: 'Scholars of Sustenance Philippines', country: 'Philippines', place_label: 'Quezon City, Philippines',
+    pin_meaning: 'organization_city', schedule_text: 'Contact SOS Philippines to arrange a suitable activity',
+    latitude: 14.6760, longitude: 121.0437, cause_tags: ['food', 'hunger', 'environment'],
+    source_url: 'https://www.scholarsofsustenance.org/sosphilippines?lang=id',
+    action_url: 'https://www.scholarsofsustenance.org/sosphilippines?lang=id',
+    action_kind: 'contact_page', action_label: 'See SOS Philippines contact details',
+    action_note: 'The page lists the Rescue Kitchen and contact email, not an open shift. The pin represents Quezon City.',
+    starts_at: null,
+  }),
+];

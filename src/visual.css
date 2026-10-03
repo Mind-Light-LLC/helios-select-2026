@@ -1,5 +1,6 @@
 .atlas-stage { background: #020a16; }
 .marker-badge.marker-monogram, .organization-mark.is-monogram { color: var(--mark-ink); background: var(--mark-bg); }
+.marker-badge.is-dark-logo, .organization-mark.is-dark-logo { background: #14364a; border-color: #d8e5df; }
 [data-mark-tone="0"] { --mark-ink: #fff; --mark-bg: #246d62; }
 [data-mark-tone="1"] { --mark-ink: #fff; --mark-bg: #976126; }
 [data-mark-tone="2"] { --mark-ink: #fff; --mark-bg: #486995; }
@@ -43,7 +44,11 @@
   mask-image: conic-gradient(from 180deg, transparent, #0003 70deg, #000 125deg, #000d 225deg, #0002 305deg, transparent);
 }
 .globe-frame[data-halo-ready='true'] .globe-halo { opacity: 1; }
-.globe-canvas canvas { filter: none; }
+.globe-canvas canvas { filter: brightness(1.08) contrast(1.03) saturate(1.06); }
+.globe-marker { width: 56px; height: 56px; pointer-events: none; }
+.marker-badge { width: 44px; height: 44px; pointer-events: auto; }
+.marker-label { top: 56px; }
+.organization-mark { width: 45px; height: 45px; }
 .imagery-credit { background: #020a16aa; }
 .command-zone { left: 50%; bottom: 29px; width: min(675px, calc(100vw - 60px)); transform: translateX(-50%); }
 .command-dock { background: linear-gradient(110deg, #f8faf2f2, #e4f1f0e9); box-shadow: inset 0 1px 1px #fff, 0 24px 75px #010713c9, 0 0 0 1px #fff7; }
@@ -81,6 +86,16 @@
   .agent-window { max-height: calc(100svh - 220px); }
 }
 @media (max-width: 760px) {
+  .globe-marker { width: 44px; height: 44px; }
+  .marker-badge { width: 34px; height: 34px; }
+  .marker-label { top: 44px; }
+  .globe-canvas { top: 140px; bottom: -140px; }
+  .globe-halo { top: calc(50% + 140px); }
+  .globe-frame::before {
+    -webkit-mask-image: radial-gradient(circle at 50% calc(50% + 140px), transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
+    mask-image: radial-gradient(circle at 50% calc(50% + 140px), transparent calc(var(--globe-radius, 280px) + 4px), #000 calc(var(--globe-radius, 280px) + 42px));
+  }
+  .maplibregl-ctrl-top-right { top: 4px; }
   .command-zone { left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; transform: none; }
   .agent-window { top: 70px; max-height: calc(100svh - 160px); }
 }

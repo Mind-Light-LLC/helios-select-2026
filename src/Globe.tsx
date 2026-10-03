@@ -3,7 +3,7 @@ import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { HeliosItem } from './types';
 import type { MapFocus } from './mapFocus';
-import { organizationBadgeTone, organizationLogoPath, organizationMonogram } from './organizationBrand';
+import { organizationBadgeTone, organizationLogoNeedsDarkBackground, organizationLogoPath, organizationMonogram } from './organizationBrand';
 import { shadeTile, shadeTileTemplate } from './solarShade';
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -37,10 +37,11 @@ const earthStyle: maplibregl.StyleSpecification = {
   layers: [{
     id: 'earth', type: 'raster', source: 'earth',
     paint: {
-      'raster-brightness-min': 0.04,
+      'raster-brightness-min': 0.07,
       'raster-brightness-max': 1,
-      'raster-contrast': 0.12,
-      'raster-saturation': 0.58,
+      'raster-contrast': 0.08,
+      'raster-saturation': 0.3,
+      'raster-fade-duration': 350,
     },
   },
     { id: 'shade', type: 'raster', source: 'shade', paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 } }],
@@ -155,6 +156,7 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
       badge.dataset.markTone = String(organizationBadgeTone(clustered ? item.place_label : item.id));
       const logoPath = clustered ? null : organizationLogoPath(item.id);
       if (logoPath) {
+        if (organizationLogoNeedsDarkBackground(item.id)) badge.classList.add('is-dark-logo');
         const logo = document.createElement('img');
         logo.alt = '';
         logo.decoding = 'async';
@@ -162,6 +164,7 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
           logo.remove();
           badge.textContent = organizationMonogram(item);
           badge.classList.add('marker-monogram');
+          badge.classList.remove('is-dark-logo');
         };
         logo.src = logoPath;
         badge.append(logo);
@@ -204,6 +207,42 @@ export function Globe({ items, selectedId, focus, onSelect, onExplore }: Props) 
     frameTarget(duration);
     return () => { map.off('resize', onResize); };
   }, [items, selectedId, focus]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || selectedId || focus || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const container = map.getContainer();
+    let lastInteraction = 0;
+    let orbitActive = false;
+    const onOrbitEnd = () => { orbitActive = false; };
+    const pauseOrbit = () => {
+      lastInteraction = Date.now();
+      if (orbitActive) map.stop();
+    };
+    const orbit = () => {
+      if (document.hidden || Date.now() - lastInteraction < 60000 || map.isMoving()) return;
+      const center = map.getCenter();
+      orbitActive = true;
+      map.easeTo({ center: [center.lng + 18, center.lat], duration: 30000, easing: (t) => t });
+    };
+    map.on('moveend', onOrbitEnd);
+    container.addEventListener('pointerdown', pauseOrbit);
+    container.addEventListener('pointermove', pauseOrbit);
+    container.addEventListener('wheel', pauseOrbit, { passive: true });
+    container.addEventListener('keydown', pauseOrbit);
+    const firstOrbit = window.setTimeout(orbit, 3500);
+    const nextOrbit = window.setInterval(orbit, 31000);
+    return () => {
+      window.clearTimeout(firstOrbit);
+      window.clearInterval(nextOrbit);
+      container.removeEventListener('pointerdown', pauseOrbit);
+      container.removeEventListener('pointermove', pauseOrbit);
+      container.removeEventListener('wheel', pauseOrbit);
+      container.removeEventListener('keydown', pauseOrbit);
+      map.stop();
+      map.off('moveend', onOrbitEnd);
+    };
+  }, [selectedId, focus]);
 
   return <div ref={frameRef} className="globe-frame">
     <div ref={containerRef} className="globe-canvas" aria-label="Global map of sourced results" />
