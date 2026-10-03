@@ -9,7 +9,7 @@ type Recognition = {
   continuous: boolean;
   interimResults: boolean;
   onresult: ((event: RecognitionEvent) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -41,11 +41,22 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
   const modeRef = useRef<'continuous' | 'hold'>('continuous');
   const recognitionRef = useRef<Recognition | null>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const holdRef = useRef(holdToTalk);
+  const replyTimerRef = useRef<number | null>(null);
+  const restartTimerRef = useRef<number | null>(null);
+  const emptyEndCountRef = useRef(0);
   const searchRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const resultsRef = useRef<HeliosItem[]>([]);
   const pendingIntentRef = useRef<'time' | 'money' | null>(null);
   useEffect(() => onNotice(error || null), [error, onNotice]);
+
+  function clearVoiceTimers() {
+    if (replyTimerRef.current !== null) window.clearTimeout(replyTimerRef.current);
+    if (restartTimerRef.current !== null) window.clearTimeout(restartTimerRef.current);
+    replyTimerRef.current = null;
+    restartTimerRef.current = null;
+  }
 
   function listen() {
     if (!activeRef.current) return;
@@ -59,19 +70,39 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
     }
     const recognition = new Constructor();
     recognition.lang = 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    let heard = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    const generation = generationRef.current;
+    let failed = false;
     recognition.onresult = (event) => {
-      heard = true;
-      const transcript = event.results[0]?.[0]?.transcript?.trim();
-      if (transcript) void respond(transcript);
-      else { setStatus('Type your reply'); onActivityChange('idle'); setError('I could not hear you. You can type your reply.'); }
+      const transcript = Array.from(event.results, (result) => result[0]?.transcript ?? '').join(' ').trim();
+      if (!transcript) return;
+      emptyEndCountRef.current = 0;
+      if (replyTimerRef.current !== null) window.clearTimeout(replyTimerRef.current);
+      replyTimerRef.current = window.setTimeout(() => {
+        replyTimerRef.current = null;
+        if (activeRef.current && generation === generationRef.current) void respond(transcript);
+      }, 1200);
     };
-    recognition.onerror = () => { if (activeRef.current) { setStatus('Type your reply'); onActivityChange('idle'); setError('Voice input failed. Check microphone access or type your reply.'); } };
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech') return;
+      failed = true;
+      if (activeRef.current) { setStatus('Type your reply'); onActivityChange('idle'); setError('Voice input failed. Check microphone access or type your reply.'); }
+    };
     recognition.onend = () => {
       if (recognitionRef.current === recognition) recognitionRef.current = null;
-      if (!heard && activeRef.current) { setStatus('Type your reply'); onActivityChange('idle'); setError('I could not hear you. You can type your reply.'); }
+      if (!activeRef.current || failed || replyTimerRef.current !== null) return;
+      if (modeRef.current !== 'continuous' && !holdRef.current) return;
+      if (++emptyEndCountRef.current > 3) {
+        setStatus('Type your reply');
+        onActivityChange('idle');
+        setError('Microphone input keeps stopping. Check browser access or type your reply.');
+        return;
+      }
+      restartTimerRef.current = window.setTimeout(() => {
+        restartTimerRef.current = null;
+        if (activeRef.current && generation === generationRef.current && !recognitionRef.current) listen();
+      }, 300);
     };
     recognitionRef.current = recognition;
     try { recognition.start(); setStatus('Listening'); onActivityChange('listening'); }
@@ -103,6 +134,8 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
     activeRef.current = true;
     modeRef.current = mode;
     generationRef.current += 1;
+    emptyEndCountRef.current = 0;
+    clearVoiceTimers();
     setActive(true);
     setError('');
     setCaption('');
@@ -115,6 +148,7 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
   function stop() {
     activeRef.current = false;
     generationRef.current += 1;
+    clearVoiceTimers();
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     searchRef.current?.abort();
@@ -132,6 +166,7 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
 
   useEffect(() => () => {
     activeRef.current = false;
+    clearVoiceTimers();
     recognitionRef.current?.stop();
     searchRef.current?.abort();
     if (speechRef.current) { speechRef.current.onend = null; speechRef.current.onerror = null; }
@@ -142,6 +177,7 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
   useEffect(() => { if (startRequest > 0 && !activeRef.current) start(); }, [startRequest]);
 
   useEffect(() => {
+    holdRef.current = holdToTalk;
     if (holdToTalk && !activeRef.current) { start('hold'); return; }
     if (modeRef.current !== 'hold') return;
     if (!holdToTalk) recognitionRef.current?.stop();
@@ -151,6 +187,7 @@ export function BrowserVoiceAgent({ onSearch, onFocus, onExploreNeeds, startRequ
   async function respond(raw: string) {
     const text = raw.trim();
     if (!text || !activeRef.current) return;
+    clearVoiceTimers();
     setAnswer('');
     setError('');
     onActivityChange('idle');
