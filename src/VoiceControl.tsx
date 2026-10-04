@@ -5,6 +5,7 @@ import { requestMicrophone } from './voiceMedia';
 import { executeNeedVoiceTool } from './voiceNeedTools';
 import { voiceSearchOutput } from './voiceSearchOutput';
 import { voiceCatalogQuery } from './voiceCatalogQuery';
+import { sendOpeningGreeting } from './voiceGreeting';
 import type { VoiceActivity } from './voiceActivity';
 
 type Props = {
@@ -226,7 +227,9 @@ export function VoiceControl({ available, onSearch, onFocus, onPlace, onNeed, re
       const channel = peer.createDataChannel('oai-events');
       channel.addEventListener('open', () => {
         if (generation !== generationRef.current) return;
-        setState(mode === 'hold' && holdRef.current ? 'listening' : 'ready');
+        const greeting = sendOpeningGreeting(channel, mode);
+        setState(greeting === 'sent' ? 'responding' : mode === 'hold' && holdRef.current ? 'listening' : 'ready');
+        if (greeting === 'failed') setError('Greeting could not start. Speak to HeliOS.');
       });
       channel.addEventListener('message', (event: MessageEvent<string>) => {
         try {

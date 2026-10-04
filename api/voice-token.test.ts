@@ -37,7 +37,8 @@ test('voice access is separate from paid search and requires its own switch', as
     assert.match(JSON.stringify(sessionBody), /focus_place/);
     assert.match(JSON.stringify(sessionBody), /Set place to the city or country/);
     assert.match(JSON.stringify(sessionBody), /Translate search terms and weekdays into English/);
-    assert.match(JSON.stringify(sessionBody), /Wait for the person to speak first/);
+    assert.match(JSON.stringify(sessionBody), /When the app requests an opening greeting, ask one brief question/);
+    assert.match(JSON.stringify(sessionBody), /Otherwise wait for the person to speak first/);
   } finally {
     if (originalVoice === undefined) delete process.env.HELIOS_VOICE_ENABLED;
     else process.env.HELIOS_VOICE_ENABLED = originalVoice;
