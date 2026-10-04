@@ -280,7 +280,7 @@ export default function App() {
           <span className="dock-divider" aria-hidden="true" />
           <VoiceControl available={voiceAvailable} onSearch={acceptVoiceSearch} onFocus={focusItem} onPlace={focusVoicePlace} onNeed={focusNeed} results={[...items, ...alternatives.map(({ item }) => item)]} startRequest={voiceStartRequest} holdToTalk={holdToTalk} onActivityChange={setVoiceActivity} onNotice={setVoiceNotice} />
         </form>
-        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'connecting' ? 'Connecting HeliOS voice…' : voiceActivity === 'listening' ? 'Listening to you' : voiceActivity === 'speaking' ? 'Helios is speaking' : voiceActivity === 'hold-ready' ? 'Hold Option to speak · Tap the mic to stop' : voiceActivity === 'ready' ? 'Speak to HeliOS · Tap the mic to stop' : voiceAvailable ? 'Hold Option to talk · Tap the mic for conversation' : 'OpenAI voice unavailable in this preview')}</span>
+        <span className="command-hint" role={voiceNotice ? 'alert' : 'status'}>{voiceNotice ?? (voiceActivity === 'connecting' ? 'Connecting HeliOS voice…' : voiceActivity === 'listening' ? 'Listening to you' : voiceActivity === 'speaking' ? 'Helios is speaking' : voiceActivity === 'hold-ready' ? 'Hold Option to speak · Tap the mic to stop' : voiceActivity === 'ready' ? 'Speak to HeliOS · Tap the mic to stop' : voiceAvailable ? 'Hold Option to talk · Tap the mic for conversation' : busy ? 'Loading HeliOS voice…' : 'Helios voice is unavailable right now')}</span>
       </div>
 
       {agentOpen && <AgentWorkbench onFocus={(id) => { setMcpHandoffId(id); focusItem(id); }} onClose={() => setAgentOpen(false)} />}
